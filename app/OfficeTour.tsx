@@ -301,8 +301,10 @@ const TOUR_STOPS: TourStop[] = [
   },
 ];
 
-const TOP_VIEW_POSITION = new THREE.Vector3(8.3, 22, -9.8);
-const TOP_VIEW_TARGET = new THREE.Vector3(8.3, 0, -10.8);
+// The landing overview is composed slightly to the right so the office remains
+// visible beside the editorial hero panel instead of sitting behind the copy.
+const TOP_VIEW_POSITION = new THREE.Vector3(5.6, 22, -9.8);
+const TOP_VIEW_TARGET = new THREE.Vector3(5.6, 0, -10.8);
 const TOP_VIEW_FOV = 52;
 const SAFE_TRAVEL_HEIGHT = 7.5;
 
@@ -830,21 +832,32 @@ export default function OfficeTour() {
       <LoadingScreen />
 
       <section className={`landing-hero${isLanding ? "" : " is-hidden"}`} aria-labelledby="landing-title">
-        <p className="landing-eyebrow">ProDyum IT · Digital Growth Partner</p>
-        <h1 id="landing-title">
-          Helping Businesses Grow Through
-          <span>Digital Marketing &amp; Technology</span>
-        </h1>
-        <p className="landing-description">
-          ProDyum IT Pvt Ltd delivers professional Digital Marketing, Branding, Web Development, and Multimedia Solutions that help businesses build a strong digital presence and grow online.
-        </p>
-        <div className="landing-actions">
-          <a className="landing-primary" href="https://prodyum.in/it/services">
-            Our Services <span aria-hidden="true">↗</span>
-          </a>
-          <a className="landing-secondary" href="https://prodyum.in/it/contact">
-            Contact Us <span aria-hidden="true">→</span>
-          </a>
+        <div className="landing-panel">
+          <div className="landing-overline">
+            <span><i aria-hidden="true" /> Live digital experience</span>
+            <span>Hyderabad · India</span>
+          </div>
+          <h1 id="landing-title">
+            <span className="landing-title-intro">Helping Businesses Grow Through</span>
+            <strong>Digital Marketing <em>&amp;</em> Technology</strong>
+          </h1>
+          <p className="landing-description">
+            ProDyum IT Pvt Ltd delivers professional Digital Marketing, Branding, Web Development, and Multimedia Solutions that help businesses build a strong digital presence and grow online.
+          </p>
+          <div className="landing-actions">
+            <a className="landing-primary" href="https://prodyum.in/it/services">
+              <span>Our Services</span><i aria-hidden="true">↗</i>
+            </a>
+            <a className="landing-secondary" href="https://prodyum.in/it/contact">
+              <span>Contact Us</span><i aria-hidden="true">→</i>
+            </a>
+          </div>
+          <div className="landing-tour-note" aria-label="Real-time office tour with sixteen viewpoints">
+            <strong>16</strong>
+            <span>Interactive viewpoints<br />inside our 3D office</span>
+            <i aria-hidden="true" />
+            <span>Scroll-driven<br />camera journey</span>
+          </div>
         </div>
       </section>
 
@@ -938,8 +951,11 @@ export default function OfficeTour() {
       ) : null}
 
       <div className={`scroll-cue${activeFrame > 0 ? " is-hidden" : ""}`} aria-hidden="true">
-        <span />
-        Scroll to point one
+        <span className="scroll-mouse" />
+        <div>
+          <strong>Scroll to explore</strong>
+          <small>First stop · Reception</small>
+        </div>
       </div>
 
       <div className="chapter-count" aria-hidden="true">
