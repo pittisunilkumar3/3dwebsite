@@ -6,9 +6,9 @@ export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
   const host = requestHeaders.get("host") ?? "localhost:3000";
   const protocol = requestHeaders.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-  const socialImage = `${protocol}://${host}/og.png`;
-  const title = "Office Field Tour — Explore in 3D";
-  const description = "A scroll-driven real-time 3D journey through fifteen points inside the office.";
+  const socialImage = `${protocol}://${host}/og-16.png`;
+  const title = "ProDyum IT — Interactive 3D Office";
+  const description = "Explore ProDyum IT services through a scroll-driven, real-time 3D office experience.";
 
   return {
     title,
@@ -17,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
       title,
       description,
       type: "website",
-      images: [{ url: socialImage, width: 1742, height: 907, alt: "Office Field Tour with a numbered 3D route" }],
+      images: [{ url: socialImage, width: 1740, height: 904, alt: "ProDyum IT interactive office tour with a numbered 3D route" }],
     },
     twitter: {
       card: "summary_large_image",

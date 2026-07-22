@@ -9,6 +9,8 @@
   --muted: #9c9b95;
   --amber: #d68c3c;
   --amber-bright: #f4b568;
+  --prodyum-blue: #149ee7;
+  --prodyum-green: #35c86c;
 }
 
 * {
@@ -152,6 +154,65 @@ a:focus-visible {
   text-transform: uppercase;
 }
 
+.brand > span.prodyum-mark {
+  position: relative;
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 11px;
+  background: linear-gradient(135deg, var(--prodyum-blue), var(--prodyum-green));
+  box-shadow: 0 10px 34px rgba(20, 158, 231, 0.2);
+}
+
+.prodyum-mark::before {
+  content: "";
+  position: absolute;
+  top: 11px;
+  left: 11px;
+  width: 20px;
+  height: 13px;
+  border: 2px solid white;
+  border-radius: 2px;
+}
+
+.prodyum-mark::after {
+  content: "";
+  position: absolute;
+  left: 17px;
+  bottom: 9px;
+  width: 9px;
+  height: 2px;
+  border-radius: 2px;
+  background: white;
+  box-shadow: 4px -4px 0 -0.5px white;
+}
+
+.brand strong.prodyum-wordmark {
+  display: flex;
+  align-items: baseline;
+  gap: 2px;
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-transform: none;
+}
+
+.prodyum-wordmark > span {
+  color: #fff;
+}
+
+.prodyum-wordmark em {
+  background: linear-gradient(90deg, var(--prodyum-blue), var(--prodyum-green));
+  background-clip: text;
+  color: transparent;
+  font-style: normal;
+}
+
+.prodyum-brand small {
+  letter-spacing: 0.08em;
+  text-transform: none;
+}
+
 .tour-status {
   display: flex;
   align-items: center;
@@ -203,7 +264,7 @@ a:focus-visible {
   padding: 0;
   list-style: none;
   display: grid;
-  grid-template-rows: repeat(15, minmax(0, 1fr));
+  grid-template-rows: repeat(16, minmax(0, 1fr));
 }
 
 .tour-rail li {
@@ -308,7 +369,7 @@ a:focus-visible {
   margin: 42px 0 16px;
   max-width: 350px;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(42px, 4.2vw, 64px);
+  font-size: clamp(38px, 3.8vw, 58px);
   font-weight: 400;
   letter-spacing: -0.045em;
   line-height: 0.96;
@@ -338,6 +399,40 @@ a:focus-visible {
   width: 30px;
   height: 1px;
   background: currentColor;
+}
+
+.story-cta {
+  width: fit-content;
+  margin-top: 22px;
+  padding: 11px 15px;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid rgba(53, 200, 108, 0.55);
+  border-radius: 3px;
+  background: linear-gradient(110deg, rgba(20, 158, 231, 0.18), rgba(53, 200, 108, 0.18));
+  color: #fff;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+}
+
+.story-cta:hover {
+  border-color: var(--prodyum-green);
+  background: linear-gradient(110deg, rgba(20, 158, 231, 0.34), rgba(53, 200, 108, 0.34));
+  transform: translateY(-2px);
+}
+
+.story-cta span {
+  color: var(--prodyum-green);
+  font-size: 13px;
+}
+
+.story-card.is-travelling h1 {
+  font-size: clamp(34px, 3.2vw, 50px);
 }
 
 .story-actions {
@@ -652,7 +747,7 @@ a:focus-visible {
 
   .tour-rail ol {
     position: relative;
-    grid-template-columns: repeat(15, 1fr);
+    grid-template-columns: repeat(16, 1fr);
     grid-template-rows: 1fr;
     height: 100%;
   }
@@ -702,6 +797,11 @@ a:focus-visible {
 
   .story-detail {
     margin-top: 16px;
+  }
+
+  .story-cta {
+    margin-top: 16px;
+    padding: 10px 13px;
   }
 
   .story-actions {

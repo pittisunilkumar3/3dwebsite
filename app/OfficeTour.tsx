@@ -9,202 +9,545 @@ import { MeshoptDecoder } from "three/examples/jsm/libs/meshopt_decoder.module.j
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 
 type Vec3 = [number, number, number];
+type Vec2 = [number, number];
 
 type TourStop = {
   eyebrow: string;
   title: string;
+  contentTitle: string;
   description: string;
   detail: string;
-  position: Vec3;
+  actionLabel: string;
+  actionHref: string;
   target: Vec3;
+  viewDirection: Vec2;
+  cameraHeight: number;
   marker: Vec3;
   fov: number;
 };
 
+type TourFrame =
+  | { kind: "overview"; nextStop: number | null }
+  | { kind: "stop"; stopIndex: number };
+
+type NavigationRequest = {
+  id: number;
+  frameIndex: number;
+};
+
+type CameraFlight = {
+  requestId: number;
+  elapsed: number;
+  duration: number;
+  cruiseHeight: number;
+  startPosition: THREE.Vector3;
+  endPosition: THREE.Vector3;
+  startTarget: THREE.Vector3;
+  endTarget: THREE.Vector3;
+  startFov: number;
+  endFov: number;
+};
+
+const VIEWING_DISTANCE = 4;
+
+function getTourViewPosition(stop: TourStop, result = new THREE.Vector3()) {
+  const target = new THREE.Vector3(...stop.target);
+  const viewDirection = new THREE.Vector3(
+    stop.viewDirection[0],
+    0,
+    stop.viewDirection[1],
+  ).normalize();
+  const verticalDistance = stop.cameraHeight - target.y;
+  const horizontalDistance = Math.sqrt(
+    Math.max(VIEWING_DISTANCE ** 2 - verticalDistance ** 2, 0),
+  );
+
+  // Each authored direction is preserved and the camera remains exactly
+  // four metres from its subject in three-dimensional space.
+  return result
+    .copy(target)
+    .addScaledVector(viewDirection, horizontalDistance)
+    .setY(stop.cameraHeight);
+}
+
+function getTourViewTarget(stop: TourStop, result = new THREE.Vector3()) {
+  return result.set(...stop.target);
+}
+
 const TOUR_STOPS: TourStop[] = [
   {
-    eyebrow: "Arrival / Orientation",
-    title: "Welcome desk",
-    description: "Enter the office at eye level and begin the guided walkthrough.",
-    detail: "Front-of-house overview",
-    position: [8.6, 1.55, 1.25],
-    target: [8.62, 0.9, -0.28],
-    marker: [8.62, 1.22, -0.28],
-    fov: 48,
+    eyebrow: "ProDyum IT / Hyderabad",
+    title: "Reception desk",
+    contentTitle: "Digital Solutions Partner",
+    description: "ProDyum IT helps businesses grow through technology, creativity, and strategic digital marketing.",
+    detail: "Digital marketing · Branding · Web · Multimedia",
+    actionLabel: "Learn About Us",
+    actionHref: "https://prodyum.in/it/about",
+    target: [3.3, 0.85, -12.67],
+    viewDirection: [-0.7, -0.72],
+    cameraHeight: 3.6,
+    marker: [3.3, 1.2, -12.67],
+    fov: 45,
   },
   {
-    eyebrow: "Arrival / Visitor Care",
-    title: "Reception station",
-    description: "A closer view of the visitor-facing desk and check-in position.",
-    detail: "Reception computer and counter",
-    position: [3.95, 1.5, 1.1],
-    target: [2.15, 0.85, -0.32],
-    marker: [2.15, 1.22, -0.32],
-    fov: 42,
-  },
-  {
-    eyebrow: "Arrival / Safety",
-    title: "Safety point",
-    description: "Operational details are highlighted as the camera crosses the entrance.",
-    detail: "Visitor safety marker",
-    position: [11.75, 1.48, -0.65],
-    target: [10.01, 0.52, -2.15],
-    marker: [10.01, 0.95, -2.15],
-    fov: 40,
-  },
-  {
-    eyebrow: "Operations / Workstation",
-    title: "Analyst screen",
-    description: "The camera moves directly toward the computer screen for a focused explanation.",
-    detail: "Primary digital workspace",
-    position: [6.85, 1.62, -5.35],
-    target: [8.83, 1.05, -7.07],
-    marker: [8.83, 1.38, -7.07],
-    fov: 38,
-  },
-  {
-    eyebrow: "Operations / Console",
-    title: "Multi-monitor desk",
-    description: "A second workstation demonstrates how screen-based tools support the team.",
-    detail: "Monitoring and coordination",
-    position: [13.9, 1.62, -5.55],
-    target: [12.19, 1.02, -7.26],
-    marker: [12.19, 1.38, -7.26],
-    fov: 38,
-  },
-  {
-    eyebrow: "Collaboration / Briefing",
-    title: "Briefing circle",
-    description: "A wider camera angle reveals the round meeting point and surrounding work area.",
-    detail: "Team briefing zone",
-    position: [6.45, 1.78, -6.2],
-    target: [8.45, 0.82, -7.82],
-    marker: [8.45, 1.25, -7.82],
-    fov: 46,
-  },
-  {
-    eyebrow: "Support / Staff Kitchen",
-    title: "Kitchen station",
-    description: "The route turns into the staff support area and focuses on the fitted equipment.",
-    detail: "Fridge and refreshment area",
-    position: [7.95, 1.52, -8.05],
-    target: [6.11, 0.9, -9.44],
-    marker: [6.11, 1.3, -9.44],
-    fov: 40,
-  },
-  {
-    eyebrow: "Security / Access",
-    title: "Secure doorway",
-    description: "The camera pauses at an internal threshold that separates operational zones.",
-    detail: "Controlled circulation point",
-    position: [10.95, 1.56, -7.45],
-    target: [9.13, 1.05, -9.4],
-    marker: [9.13, 1.45, -9.4],
-    fov: 42,
-  },
-  {
-    eyebrow: "Casework / Desk",
-    title: "Casework station",
-    description: "Documents, seating and desktop tools come into view at the central workbench.",
-    detail: "Active case preparation",
-    position: [6.95, 1.58, -10.4],
-    target: [8.78, 0.92, -12.15],
-    marker: [8.78, 1.34, -12.15],
+    eyebrow: "Services / Digital Marketing",
+    title: "Evidence files",
+    contentTitle: "Digital Marketing",
+    description: "Increase online visibility and reach the right audience through strategic, measurable marketing.",
+    detail: "Social · Search · Content",
+    actionLabel: "Explore Marketing",
+    actionHref: "https://prodyum.in/it/services",
+    target: [12.9, 0.84, -15.95],
+    viewDirection: [-0.2, 0.98],
+    cameraHeight: 1.44,
+    marker: [12.9, 1.2, -15.95],
     fov: 39,
   },
   {
-    eyebrow: "Records / Review",
-    title: "Records desk",
-    description: "A precise close-up presents the document review position and adjacent screens.",
-    detail: "Records and verification",
-    position: [13.75, 1.58, -10.35],
-    target: [12.06, 0.94, -12.24],
-    marker: [12.06, 1.34, -12.24],
-    fov: 38,
+    eyebrow: "Marketing / Performance",
+    title: "Safety point",
+    contentTitle: "Performance Marketing",
+    description: "Run data-driven advertising campaigns across Meta and Google platforms.",
+    detail: "Meta Ads · Google Ads",
+    actionLabel: "Get a Quote",
+    actionHref: "https://prodyum.in/it/contact",
+    target: [10.01, 0.48, -2.15],
+    viewDirection: [-0.75, -0.66],
+    cameraHeight: 1.5,
+    marker: [10.01, 0.95, -2.15],
+    fov: 41,
   },
   {
-    eyebrow: "Systems / Computing",
-    title: "Compute tower",
-    description: "The tour lowers slightly to show the workstation hardware beneath the desk line.",
-    detail: "Local processing equipment",
-    position: [9.75, 1.42, -10.55],
-    target: [11.17, 0.63, -12.19],
-    marker: [11.17, 1.05, -12.19],
+    eyebrow: "Process / Planning",
+    title: "Interview table",
+    contentTitle: "Strategy & Planning",
+    description: "A tailored roadmap aligns creative and technical execution with your business goals.",
+    detail: "Requirements · Roadmap · Outcomes",
+    actionLabel: "Plan Your Project",
+    actionHref: "https://prodyum.in/it/contact",
+    target: [7.85, 0.8, -7.05],
+    viewDirection: [0.82, -0.57],
+    cameraHeight: 4.4,
+    marker: [7.85, 1.12, -7.05],
+    fov: 43,
+  },
+  {
+    eyebrow: "Services / Development",
+    title: "Analyst screen",
+    contentTitle: "Web Development",
+    description: "Modern, responsive business, corporate, landing-page, and e-commerce websites.",
+    detail: "Responsive · Scalable · Business-ready",
+    actionLabel: "Build Your Website",
+    actionHref: "https://prodyum.in/it/contact",
+    target: [9.26, 1.14, -12.54],
+    viewDirection: [0, -1],
+    cameraHeight: 1.52,
+    marker: [9.26, 1.4, -12.54],
     fov: 36,
   },
   {
-    eyebrow: "Facilities / Control",
-    title: "Facilities panel",
-    description: "A short turn reveals the building-services control point on the west side.",
-    detail: "Electrical breaker panel",
-    position: [3.1, 1.58, -12.85],
-    target: [4.68, 1.48, -14.79],
-    marker: [4.68, 1.72, -14.79],
-    fov: 40,
+    eyebrow: "Marketing / Search",
+    title: "Records desk",
+    contentTitle: "Search Engine Optimization",
+    description: "Improve search visibility through keyword research, on-page optimization, and link building.",
+    detail: "Keywords · On-page · Links",
+    actionLabel: "Improve Visibility",
+    actionHref: "https://prodyum.in/it/contact",
+    target: [12.2, 0.84, -12.38],
+    viewDirection: [-0.32, -0.95],
+    cameraHeight: 3.45,
+    marker: [12.2, 1.18, -12.38],
+    fov: 43,
   },
   {
-    eyebrow: "Evidence / Handling",
-    title: "Evidence desk",
-    description: "The camera approaches the rear desk where evidence can be recorded and reviewed.",
-    detail: "Controlled evidence workflow",
-    position: [14.25, 1.6, -14.05],
-    target: [12.79, 0.94, -15.82],
-    marker: [12.79, 1.36, -15.82],
-    fov: 38,
+    eyebrow: "Marketing / Social",
+    title: "Lounge sofa",
+    contentTitle: "Social Media Management",
+    description: "End-to-end social media management across Facebook, Instagram, LinkedIn, and X.",
+    detail: "Content · Community · Growth",
+    actionLabel: "Grow Social Media",
+    actionHref: "https://prodyum.in/it/contact",
+    target: [5.7, 0.58, -12.85],
+    viewDirection: [0.3, -0.95],
+    cameraHeight: 3.35,
+    marker: [5.7, 0.95, -12.85],
+    fov: 44,
   },
   {
-    eyebrow: "Systems / Equipment",
-    title: "Systems bay",
-    description: "A close inspection highlights the equipment towers supporting the rear workstations.",
-    detail: "Workstation hardware line",
-    position: [9.25, 1.52, -14.02],
-    target: [11.1, 0.68, -15.84],
-    marker: [11.1, 1.12, -15.84],
+    eyebrow: "Services / Creative",
+    title: "Chess table",
+    contentTitle: "Branding & Design",
+    description: "Build a strong identity through logo design, brand systems, campaign creatives, and UI/UX.",
+    detail: "Logo · Identity · UI/UX",
+    actionLabel: "Build Your Brand",
+    actionHref: "https://prodyum.in/it/contact",
+    target: [5.75, 0.76, -14.2],
+    viewDirection: [-0.45, -0.89],
+    cameraHeight: 3.45,
+    marker: [5.75, 1.04, -14.2],
+    fov: 45,
+  },
+  {
+    eyebrow: "Why ProDyum / Delivery",
+    title: "Air-conditioning unit",
+    contentTitle: "End-to-end Solutions",
+    description: "Complete digital services under one roof, combining strategy, creativity, and technology.",
+    detail: "One team · Complete delivery",
+    actionLabel: "View All Services",
+    actionHref: "https://prodyum.in/it/services",
+    target: [10.9, 2.05, -18.12],
+    viewDirection: [0.55, 0.83],
+    cameraHeight: 2.05,
+    marker: [10.9, 2.05, -18.12],
+    fov: 36,
+  },
+  {
+    eyebrow: "Services / Multimedia",
+    title: "Staff refreshment hub",
+    contentTitle: "Video & Multimedia",
+    description: "Professional product shoots, promotional videos, social reels, and video editing.",
+    detail: "Shoots · Promos · Reels · Editing",
+    actionLabel: "Explore Multimedia",
+    actionHref: "https://prodyum.in/it/services",
+    target: [1.98, 1.05, -20.71],
+    viewDirection: [0.4, 0.92],
+    cameraHeight: 1.58,
+    marker: [1.98, 1.48, -20.71],
+    fov: 42,
+  },
+  {
+    eyebrow: "Let's Talk / Consultation",
+    title: "Conference room",
+    contentTitle: "Free Consultation",
+    description: "Discuss your goals with ProDyum IT and shape the right digital solution for your business.",
+    detail: "Discover · Plan · Deliver",
+    actionLabel: "Book a Consultation",
+    actionHref: "https://prodyum.in/it/contact",
+    target: [11.95, 0.84, -7.62],
+    viewDirection: [1, 0],
+    cameraHeight: 1.65,
+    marker: [12.15, 1.12, -7.62],
+    fov: 44,
+  },
+  {
+    eyebrow: "Why ProDyum / Support",
+    title: "Wall clock",
+    contentTitle: "24/7 Support",
+    description: "Reliable support is available whenever your digital business needs assistance.",
+    detail: "Responsive · Professional · Reliable",
+    actionLabel: "Contact Support",
+    actionHref: "https://prodyum.in/it/contact",
+    target: [9.7, 2.12, -18.12],
+    viewDirection: [0.08, 1],
+    cameraHeight: 1.62,
+    marker: [9.7, 2.12, -18.12],
     fov: 37,
   },
   {
-    eyebrow: "Staff Hub / Final Stop",
-    title: "Staff refreshment hub",
-    description: "The route concludes at the rear staff area with a final view back through the office.",
-    detail: "Vending and staff amenity",
-    position: [3.55, 1.62, -18.35],
-    target: [1.55, 1.0, -20.71],
-    marker: [1.55, 1.48, -20.71],
+    eyebrow: "Why ProDyum / Strategy",
+    title: "Umbrella rack",
+    contentTitle: "Customized Strategies",
+    description: "Every solution is tailored to each client's goals, audience, and growth needs.",
+    detail: "Tailored to your business",
+    actionLabel: "Discuss Your Goals",
+    actionHref: "https://prodyum.in/it/contact",
+    target: [13.65, 0.22, -0.82],
+    viewDirection: [0.5, -0.87],
+    cameraHeight: 1.25,
+    marker: [13.65, 0.62, -0.82],
+    fov: 39,
+  },
+  {
+    eyebrow: "Web / Commerce",
+    title: "Office refrigerator",
+    contentTitle: "E-commerce Websites",
+    description: "Modern, responsive e-commerce websites tailored to your business needs.",
+    detail: "Storefront · Mobile · Business-ready",
+    actionLabel: "Launch Your Store",
+    actionHref: "https://prodyum.in/it/contact",
+    target: [5.79, 0.85, -9.78],
+    viewDirection: [0, -1],
+    cameraHeight: 1.55,
+    marker: [5.79, 1.25, -9.78],
+    fov: 39,
+  },
+  {
+    eyebrow: "Why ProDyum / Growth",
+    title: "Water dispenser",
+    contentTitle: "Creative + Technology",
+    description: "A creative and technical team combines strategy and technology to help brands grow online.",
+    detail: "Creative · Strategic · Technical",
+    actionLabel: "Why ProDyum",
+    actionHref: "https://prodyum.in/it/about",
+    target: [6.08, 0.95, -17.75],
+    viewDirection: [0.2, 0.98],
+    cameraHeight: 1.55,
+    marker: [6.08, 1.2, -17.75],
+    fov: 39,
+  },
+  {
+    eyebrow: "Start / Your Project",
+    title: "Evidence box",
+    contentTitle: "Ready to Grow?",
+    description: "Start a conversation about the digital solutions that can help achieve your business goals.",
+    detail: "100+ clients · 50+ projects",
+    actionLabel: "Start Your Project",
+    actionHref: "https://prodyum.in/it/contact",
+    target: [10.02, 0.82, -15.92],
+    viewDirection: [0.85, 0.53],
+    cameraHeight: 3.55,
+    marker: [10.02, 1.1, -15.92],
     fov: 42,
   },
 ];
 
+const TOP_VIEW_POSITION = new THREE.Vector3(8.3, 22, -9.8);
+const TOP_VIEW_TARGET = new THREE.Vector3(8.3, 0, -10.8);
+const TOP_VIEW_FOV = 52;
+const SAFE_TRAVEL_HEIGHT = 7.5;
+
+const TOUR_FRAMES: TourFrame[] = [
+  { kind: "overview", nextStop: 0 },
+  ...TOUR_STOPS.flatMap<TourFrame>((_, index) => [
+    { kind: "stop", stopIndex: index },
+    {
+      kind: "overview",
+      nextStop: index < TOUR_STOPS.length - 1 ? index + 1 : null,
+    },
+  ]),
+];
+
+function getFramePosition(frame: TourFrame) {
+  return frame.kind === "overview"
+    ? TOP_VIEW_POSITION.clone()
+    : getTourViewPosition(TOUR_STOPS[frame.stopIndex]);
+}
+
+function getFrameTarget(frame: TourFrame) {
+  return frame.kind === "overview"
+    ? TOP_VIEW_TARGET.clone()
+    : getTourViewTarget(TOUR_STOPS[frame.stopIndex]);
+}
+
+function getFrameFov(frame: TourFrame) {
+  return frame.kind === "overview"
+    ? TOP_VIEW_FOV
+    : TOUR_STOPS[frame.stopIndex].fov;
+}
+
 function CameraRig({
   progressRef,
+  navigationRequestRef,
+  onNavigationSettled,
   reducedMotion,
 }: {
   progressRef: React.MutableRefObject<number>;
+  navigationRequestRef: React.MutableRefObject<NavigationRequest | null>;
+  onNavigationSettled: () => void;
   reducedMotion: boolean;
 }) {
   const positions = useMemo(
-    () => TOUR_STOPS.map((stop) => new THREE.Vector3(...stop.position)),
+    () => TOUR_FRAMES.map(getFramePosition),
     [],
   );
   const targets = useMemo(
-    () => TOUR_STOPS.map((stop) => new THREE.Vector3(...stop.target)),
+    () => TOUR_FRAMES.map(getFrameTarget),
     [],
   );
-  const positionCurve = useMemo(
-    () => new THREE.CatmullRomCurve3(positions, false, "catmullrom", 0.2),
-    [positions],
-  );
-  const targetCurve = useMemo(
-    () => new THREE.CatmullRomCurve3(targets, false, "catmullrom", 0.2),
-    [targets],
-  );
-  const desiredPosition = useMemo(() => new THREE.Vector3(), []);
-  const desiredTarget = useMemo(() => new THREE.Vector3(), []);
+  const fovs = useMemo(() => TOUR_FRAMES.map(getFrameFov), []);
+  const desiredPositionRef = useRef(new THREE.Vector3());
+  const desiredTargetRef = useRef(new THREE.Vector3());
   const smoothTarget = useRef(targets[0].clone());
+  const handledRequestId = useRef(0);
+  const flightRef = useRef<CameraFlight | null>(null);
 
   useFrame(({ camera }, delta) => {
+    const desiredPosition = desiredPositionRef.current;
+    const desiredTarget = desiredTargetRef.current;
+    const navigationRequest = navigationRequestRef.current;
+
+    if (
+      navigationRequest &&
+      navigationRequest.id !== handledRequestId.current
+    ) {
+      handledRequestId.current = navigationRequest.id;
+      const endPosition = positions[navigationRequest.frameIndex];
+      flightRef.current = {
+        requestId: navigationRequest.id,
+        elapsed: 0,
+        duration: reducedMotion ? 0.01 : 2.2,
+        cruiseHeight: Math.max(
+          SAFE_TRAVEL_HEIGHT,
+          camera.position.y,
+          endPosition.y,
+        ),
+        startPosition: camera.position.clone(),
+        endPosition: endPosition.clone(),
+        startTarget: smoothTarget.current.clone(),
+        endTarget: targets[navigationRequest.frameIndex].clone(),
+        startFov:
+          camera instanceof THREE.PerspectiveCamera
+            ? camera.fov
+            : fovs[navigationRequest.frameIndex],
+        endFov: fovs[navigationRequest.frameIndex],
+      };
+    }
+
+    const flight = flightRef.current;
+    if (flight) {
+      flight.elapsed += delta;
+      const flightProgress = THREE.MathUtils.clamp(
+        flight.elapsed / flight.duration,
+        0,
+        1,
+      );
+
+      if (flightProgress < 0.28) {
+        const phase = THREE.MathUtils.smootherstep(
+          flightProgress / 0.28,
+          0,
+          1,
+        );
+        desiredPosition.copy(flight.startPosition);
+        desiredPosition.y = THREE.MathUtils.lerp(
+          flight.startPosition.y,
+          flight.cruiseHeight,
+          phase,
+        );
+      } else if (flightProgress < 0.72) {
+        const phase = THREE.MathUtils.smootherstep(
+          (flightProgress - 0.28) / 0.44,
+          0,
+          1,
+        );
+        desiredPosition.lerpVectors(
+          flight.startPosition,
+          flight.endPosition,
+          phase,
+        );
+        desiredPosition.y = flight.cruiseHeight;
+      } else {
+        const phase = THREE.MathUtils.smootherstep(
+          (flightProgress - 0.72) / 0.28,
+          0,
+          1,
+        );
+        desiredPosition.copy(flight.endPosition);
+        desiredPosition.y = THREE.MathUtils.lerp(
+          flight.cruiseHeight,
+          flight.endPosition.y,
+          phase,
+        );
+      }
+
+      const targetProgress = THREE.MathUtils.smootherstep(
+        flightProgress,
+        0,
+        1,
+      );
+      desiredTarget
+        .copy(flight.startTarget)
+        .lerp(flight.endTarget, targetProgress);
+
+      camera.position.copy(desiredPosition);
+      smoothTarget.current.copy(desiredTarget);
+      camera.lookAt(smoothTarget.current);
+
+      if (camera instanceof THREE.PerspectiveCamera) {
+        camera.fov = THREE.MathUtils.lerp(
+          flight.startFov,
+          flight.endFov,
+          targetProgress,
+        );
+        camera.updateProjectionMatrix();
+      }
+
+      if (flightProgress >= 1) {
+        flightRef.current = null;
+        if (navigationRequestRef.current?.id === flight.requestId) {
+          navigationRequestRef.current = null;
+        }
+        onNavigationSettled();
+      }
+      return;
+    }
+
     const progress = THREE.MathUtils.clamp(progressRef.current, 0, 1);
-    positionCurve.getPoint(progress, desiredPosition);
-    targetCurve.getPoint(progress, desiredTarget);
+    const scaled = progress * (TOUR_FRAMES.length - 1);
+    const start = Math.floor(scaled);
+    const end = Math.min(start + 1, TOUR_FRAMES.length - 1);
+    const segmentProgress = scaled - start;
+    const easedProgress = THREE.MathUtils.smootherstep(segmentProgress, 0, 1);
+    const startFrame = TOUR_FRAMES[start];
+    const endFrame = TOUR_FRAMES[end];
+    const startPosition = positions[start];
+    const endPosition = positions[end];
+
+    if (start === end) {
+      desiredPosition.copy(startPosition);
+    } else if (startFrame.kind === "overview" && endFrame.kind === "stop") {
+      // Travel over the walls first, then descend vertically onto the point.
+      const horizontalPhase = 0.64;
+      if (easedProgress < horizontalPhase) {
+        const phase = THREE.MathUtils.smootherstep(
+          easedProgress / horizontalPhase,
+          0,
+          1,
+        );
+        desiredPosition.lerpVectors(startPosition, endPosition, phase);
+        desiredPosition.y = THREE.MathUtils.lerp(
+          startPosition.y,
+          SAFE_TRAVEL_HEIGHT,
+          phase,
+        );
+      } else {
+        const phase = THREE.MathUtils.smootherstep(
+          (easedProgress - horizontalPhase) / (1 - horizontalPhase),
+          0,
+          1,
+        );
+        desiredPosition.copy(endPosition);
+        desiredPosition.y = THREE.MathUtils.lerp(
+          SAFE_TRAVEL_HEIGHT,
+          endPosition.y,
+          phase,
+        );
+      }
+    } else if (startFrame.kind === "stop" && endFrame.kind === "overview") {
+      // Reverse the same safe route: rise above the walls before crossing.
+      const verticalPhase = 0.36;
+      if (easedProgress < verticalPhase) {
+        const phase = THREE.MathUtils.smootherstep(
+          easedProgress / verticalPhase,
+          0,
+          1,
+        );
+        desiredPosition.copy(startPosition);
+        desiredPosition.y = THREE.MathUtils.lerp(
+          startPosition.y,
+          SAFE_TRAVEL_HEIGHT,
+          phase,
+        );
+      } else {
+        const phase = THREE.MathUtils.smootherstep(
+          (easedProgress - verticalPhase) / (1 - verticalPhase),
+          0,
+          1,
+        );
+        desiredPosition.lerpVectors(startPosition, endPosition, phase);
+        desiredPosition.y = THREE.MathUtils.lerp(
+          SAFE_TRAVEL_HEIGHT,
+          endPosition.y,
+          phase,
+        );
+      }
+    } else {
+      desiredPosition.lerpVectors(startPosition, endPosition, easedProgress);
+    }
+
+    desiredTarget
+      .copy(targets[start])
+      .lerp(targets[end], easedProgress);
 
     const speed = reducedMotion ? 18 : 4.2;
     const alpha = 1 - Math.exp(-speed * delta);
@@ -213,14 +556,10 @@ function CameraRig({
     camera.lookAt(smoothTarget.current);
 
     if (camera instanceof THREE.PerspectiveCamera) {
-      const scaled = progress * (TOUR_STOPS.length - 1);
-      const start = Math.floor(scaled);
-      const end = Math.min(start + 1, TOUR_STOPS.length - 1);
-      const localProgress = scaled - start;
       const desiredFov = THREE.MathUtils.lerp(
-        TOUR_STOPS[start].fov,
-        TOUR_STOPS[end].fov,
-        localProgress,
+        fovs[start],
+        fovs[end],
+        easedProgress,
       );
       camera.fov = THREE.MathUtils.damp(camera.fov, desiredFov, speed, delta);
       camera.updateProjectionMatrix();
@@ -236,24 +575,44 @@ function OfficeModel() {
   });
 
   useEffect(() => {
+    const materials = new Set<THREE.Material>();
+
     gltf.scene.traverse((object) => {
       if (object instanceof THREE.Mesh) {
         object.castShadow = false;
         object.receiveShadow = false;
         object.frustumCulled = true;
+
+        const meshMaterials = Array.isArray(object.material)
+          ? object.material
+          : [object.material];
+        meshMaterials.forEach((material) => materials.add(material));
       }
+    });
+
+    // The source model contains one-sided wall surfaces. Rendering both faces
+    // keeps every wall visible while the camera moves inside the office.
+    materials.forEach((material) => {
+      material.side = THREE.DoubleSide;
+      material.needsUpdate = true;
     });
   }, [gltf.scene]);
 
   return <primitive object={gltf.scene} dispose={null} />;
 }
 
-function Hotspots({ active, onSelect }: { active: number; onSelect: (index: number) => void }) {
+function Hotspots({
+  active,
+  onSelect,
+}: {
+  active: number | null;
+  onSelect: (index: number) => void;
+}) {
   return (
     <group>
       {TOUR_STOPS.map((stop, index) => {
         const isActive = index === active;
-        const isNear = Math.abs(index - active) <= 1;
+        const isNear = active === null || Math.abs(index - active) <= 1;
         return (
           <Html
             key={stop.title}
@@ -306,8 +665,11 @@ function LoadingScreen() {
 
 export default function OfficeTour() {
   const progressRef = useRef(0);
-  const activeRef = useRef(0);
-  const [active, setActive] = useState(0);
+  const navigationRequestRef = useRef<NavigationRequest | null>(null);
+  const navigationIdRef = useRef(0);
+  const activeFrameRef = useRef(0);
+  const [activeFrame, setActiveFrame] = useState(0);
+  const [isNavigating, setIsNavigating] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
 
   useEffect(() => {
@@ -323,13 +685,13 @@ export default function OfficeTour() {
       const maxScroll = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
       const nextProgress = THREE.MathUtils.clamp(window.scrollY / maxScroll, 0, 1);
       progressRef.current = nextProgress;
-      const nextActive = Math.min(
-        TOUR_STOPS.length - 1,
-        Math.round(nextProgress * (TOUR_STOPS.length - 1)),
+      const nextActiveFrame = Math.min(
+        TOUR_FRAMES.length - 1,
+        Math.round(nextProgress * (TOUR_FRAMES.length - 1)),
       );
-      if (nextActive !== activeRef.current) {
-        activeRef.current = nextActive;
-        setActive(nextActive);
+      if (nextActiveFrame !== activeFrameRef.current) {
+        activeFrameRef.current = nextActiveFrame;
+        setActiveFrame(nextActiveFrame);
       }
     };
 
@@ -342,37 +704,120 @@ export default function OfficeTour() {
     };
   }, []);
 
-  const goToStop = useCallback(
-    (index: number) => {
+  const goToFrame = useCallback(
+    (frameIndex: number) => {
+      const nextFrame = THREE.MathUtils.clamp(
+        frameIndex,
+        0,
+        TOUR_FRAMES.length - 1,
+      );
+      if (
+        nextFrame === activeFrameRef.current &&
+        navigationRequestRef.current === null
+      ) {
+        setIsNavigating(false);
+        return;
+      }
       const maxScroll = Math.max(document.documentElement.scrollHeight - window.innerHeight, 0);
-      const top = (index / (TOUR_STOPS.length - 1)) * maxScroll;
-      window.scrollTo({ top, behavior: reducedMotion ? "auto" : "smooth" });
+      const nextProgress = nextFrame / (TOUR_FRAMES.length - 1);
+
+      setIsNavigating(true);
+      navigationIdRef.current += 1;
+      navigationRequestRef.current = {
+        id: navigationIdRef.current,
+        frameIndex: nextFrame,
+      };
+      progressRef.current = nextProgress;
+      activeFrameRef.current = nextFrame;
+      setActiveFrame(nextFrame);
+
+      // Jump the document directly to the selected chapter. CameraRig owns the
+      // visible over-wall flight, so intermediate stops never activate.
+      window.scrollTo({ top: nextProgress * maxScroll, behavior: "auto" });
     },
-    [reducedMotion],
+    [],
   );
 
-  const stop = TOUR_STOPS[active];
-  const progressPercent = ((active + 1) / TOUR_STOPS.length) * 100;
+  const handleNavigationSettled = useCallback(() => {
+    setIsNavigating(false);
+  }, []);
+
+  const goToStop = useCallback(
+    (stopIndex: number) => goToFrame(stopIndex * 2 + 1),
+    [goToFrame],
+  );
+
+  const frame = TOUR_FRAMES[activeFrame];
+  const activeStop = frame.kind === "stop" ? frame.stopIndex : null;
+  const overviewNextStop = frame.kind === "overview" ? frame.nextStop : null;
+  const stop = activeStop === null ? null : TOUR_STOPS[activeStop];
+  const progressPercent = ((activeFrame + 1) / TOUR_FRAMES.length) * 100;
+  const story = stop
+    ? {
+        eyebrow: stop.eyebrow,
+        title: stop.contentTitle,
+        description: stop.description,
+        detail: stop.detail,
+        meta: `Point ${String(activeStop + 1).padStart(2, "0")} · ${stop.title}`,
+        actionLabel: stop.actionLabel,
+        actionHref: stop.actionHref,
+      }
+    : overviewNextStop === null
+      ? {
+          eyebrow: "Tour / Complete",
+          title: "Tour complete",
+          description: "You have explored all sixteen office viewpoints. Scroll upward to revisit any point.",
+          detail: "Sixteen points explored",
+          meta: "Top view",
+          actionLabel: null,
+          actionHref: null,
+        }
+      : {
+          eyebrow: "Navigation / Top View",
+          title: "Office overview",
+          description: `Continue scrolling to point ${String(overviewNextStop + 1).padStart(2, "0")}: ${TOUR_STOPS[overviewNextStop].title}.`,
+          detail: `Next · ${TOUR_STOPS[overviewNextStop].title}`,
+          meta: "Top view",
+          actionLabel: null,
+          actionHref: null,
+        };
+  const presentedStory =
+    isNavigating && stop
+      ? {
+          eyebrow: "Navigation / Direct Flight",
+          title: `Moving to ${stop.title}`,
+          description: "The camera is taking a direct route above the office and descending at the selected pointer.",
+          detail: "Rise · Travel · Descend",
+          meta: `Point ${String(activeStop + 1).padStart(2, "0")}`,
+          actionLabel: null,
+          actionHref: null,
+        }
+      : story;
 
   return (
     <main className="office-tour">
       <div className="scene-stage" aria-label="Interactive three-dimensional office tour">
         <Canvas
           dpr={[1, 1.5]}
-          camera={{ position: TOUR_STOPS[0].position, fov: TOUR_STOPS[0].fov, near: 0.05, far: 100 }}
+          camera={{ position: TOP_VIEW_POSITION.toArray(), fov: TOP_VIEW_FOV, near: 0.05, far: 100 }}
           gl={{ antialias: true, powerPreference: "high-performance" }}
         >
           <color attach="background" args={["#080a0b"]} />
-          <fog attach="fog" args={["#080a0b", 16, 38]} />
-          <ambientLight intensity={1.65} />
-          <hemisphereLight args={["#f1e5cb", "#24211c", 1.8]} />
-          <directionalLight position={[7, 10, 4]} intensity={2.2} color="#ffe5b0" />
-          <directionalLight position={[-8, 5, -12]} intensity={1.15} color="#87a0b4" />
+          <fog attach="fog" args={["#080a0b", 24, 52]} />
+          <ambientLight intensity={0.72} />
+          <hemisphereLight args={["#f1e5cb", "#24211c", 0.8]} />
+          <directionalLight position={[7, 10, 4]} intensity={1.05} color="#ffe5b0" />
+          <directionalLight position={[-8, 5, -12]} intensity={0.42} color="#87a0b4" />
           <Suspense fallback={null}>
             <OfficeModel />
-            <Hotspots active={active} onSelect={goToStop} />
+            <Hotspots active={activeStop} onSelect={goToStop} />
           </Suspense>
-          <CameraRig progressRef={progressRef} reducedMotion={reducedMotion} />
+          <CameraRig
+            progressRef={progressRef}
+            navigationRequestRef={navigationRequestRef}
+            onNavigationSettled={handleNavigationSettled}
+            reducedMotion={reducedMotion}
+          />
         </Canvas>
         <div className="scene-vignette" aria-hidden="true" />
         <div className="scene-grain" aria-hidden="true" />
@@ -381,11 +826,20 @@ export default function OfficeTour() {
       <LoadingScreen />
 
       <header className="tour-header">
-        <a className="brand" href="#tour-start" onClick={() => goToStop(0)}>
-          <span>15</span>
+        <a
+          className="brand prodyum-brand"
+          href="#tour-start"
+          onClick={(event) => {
+            event.preventDefault();
+            goToFrame(0);
+          }}
+        >
+          <span className="prodyum-mark" aria-hidden="true" />
           <div>
-            <strong>Office Field Tour</strong>
-            <small>Interactive spatial story</small>
+            <strong className="prodyum-wordmark">
+              <span>ProDyum</span><em>IT</em>
+            </strong>
+            <small>Pvt Ltd · Interactive 3D office</small>
           </div>
         </a>
         <div className="tour-status">
@@ -407,9 +861,9 @@ export default function OfficeTour() {
             <li key={item.title}>
               <button
                 type="button"
-                className={index === active ? "is-active" : ""}
+                className={`${index === activeStop ? "is-active" : ""}${index === overviewNextStop ? " is-next" : ""}`}
                 onClick={() => goToStop(index)}
-                aria-current={index === active ? "step" : undefined}
+                aria-current={index === activeStop ? "step" : undefined}
                 aria-label={`Stop ${index + 1}: ${item.title}`}
               >
                 <span>{String(index + 1).padStart(2, "0")}</span>
@@ -420,41 +874,53 @@ export default function OfficeTour() {
         </ol>
       </nav>
 
-      <section className="story-card" aria-live="polite" aria-atomic="true">
+      <section className={`story-card${stop ? "" : " is-overview"}${isNavigating ? " is-travelling" : ""}`} aria-live="polite" aria-atomic="true">
         <div className="story-meta">
-          <span>Stop {String(active + 1).padStart(2, "0")}</span>
-          <span>{stop.eyebrow}</span>
+          <span>{presentedStory.meta}</span>
+          <span>{presentedStory.eyebrow}</span>
         </div>
-        <h1>{stop.title}</h1>
-        <p>{stop.description}</p>
+        <h1>{presentedStory.title}</h1>
+        <p>{presentedStory.description}</p>
         <div className="story-detail">
           <span aria-hidden="true" />
-          {stop.detail}
+          {presentedStory.detail}
         </div>
+        {presentedStory.actionHref && presentedStory.actionLabel ? (
+          <a
+            className="story-cta"
+            href={presentedStory.actionHref}
+            target="_blank"
+            rel="noreferrer"
+            aria-label={`${presentedStory.actionLabel} on ProDyum IT`}
+          >
+            {presentedStory.actionLabel}
+            <span aria-hidden="true">↗</span>
+          </a>
+        ) : null}
         <div className="story-actions">
-          <button type="button" onClick={() => goToStop(Math.max(active - 1, 0))} disabled={active === 0}>
-            Previous
+          <button type="button" onClick={() => goToFrame(Math.max(activeFrame - 1, 0))} disabled={activeFrame === 0}>
+            Previous view
           </button>
           <button
             type="button"
             className="next-action"
-            onClick={() => goToStop(Math.min(active + 1, TOUR_STOPS.length - 1))}
-            disabled={active === TOUR_STOPS.length - 1}
+            onClick={() => goToFrame(Math.min(activeFrame + 1, TOUR_FRAMES.length - 1))}
+            disabled={activeFrame === TOUR_FRAMES.length - 1}
           >
-            Next stop <span aria-hidden="true">↘</span>
+            Next view <span aria-hidden="true">↘</span>
           </button>
         </div>
       </section>
 
-      <div className={`scroll-cue${active > 0 ? " is-hidden" : ""}`} aria-hidden="true">
+      <div className={`scroll-cue${activeFrame > 0 ? " is-hidden" : ""}`} aria-hidden="true">
         <span />
-        Scroll to enter
+        Scroll to point one
       </div>
 
       <div className="chapter-count" aria-hidden="true">
-        <span>{String(active + 1).padStart(2, "0")}</span>
+        <span>{activeStop === null ? "TOP" : String(activeStop + 1).padStart(2, "0")}</span>
         <i />
-        <span>15</span>
+        <span>{String(TOUR_STOPS.length).padStart(2, "0")}</span>
       </div>
 
       <footer className="model-credit">
@@ -468,11 +934,19 @@ export default function OfficeTour() {
       </footer>
 
       <div className="scroll-chapters" id="tour-start">
-        {TOUR_STOPS.map((item, index) => (
-          <section key={item.title} aria-label={`Tour stop ${index + 1}: ${item.title}`}>
-            <h2 className="sr-only">{item.title}</h2>
-          </section>
-        ))}
+        {TOUR_FRAMES.map((item, index) => {
+          const label =
+            item.kind === "overview"
+              ? item.nextStop === null
+                ? "Final office overview"
+                : `Office overview before point ${item.nextStop + 1}`
+              : `Tour point ${item.stopIndex + 1}: ${TOUR_STOPS[item.stopIndex].title}`;
+          return (
+            <section key={`${item.kind}-${index}`} aria-label={label}>
+              <h2 className="sr-only">{label}</h2>
+            </section>
+          );
+        })}
       </div>
     </main>
   );
