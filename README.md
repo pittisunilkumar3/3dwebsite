@@ -40,10 +40,14 @@ Open the local URL printed by the development server.
 ## Validation
 
 ```bash
+npm run build
 npm run test
 npm run lint
 node scripts/check-camera-lines.mjs
 ```
+
+`npm run build` creates the standard Next.js `.next` output used by Vercel.
+For the Cloudflare/Vinext deployment target, use `npm run build:sites`.
 
 ## Main files
 

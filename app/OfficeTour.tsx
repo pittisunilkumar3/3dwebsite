@@ -751,6 +751,7 @@ export default function OfficeTour() {
   const activeStop = frame.kind === "stop" ? frame.stopIndex : null;
   const overviewNextStop = frame.kind === "overview" ? frame.nextStop : null;
   const stop = activeStop === null ? null : TOUR_STOPS[activeStop];
+  const pointNumber = activeStop === null ? 0 : activeStop + 1;
   const progressPercent = ((activeFrame + 1) / TOUR_FRAMES.length) * 100;
   const story = stop
     ? {
@@ -758,7 +759,7 @@ export default function OfficeTour() {
         title: stop.contentTitle,
         description: stop.description,
         detail: stop.detail,
-        meta: `Point ${String(activeStop + 1).padStart(2, "0")} · ${stop.title}`,
+        meta: `Point ${String(pointNumber).padStart(2, "0")} · ${stop.title}`,
         actionLabel: stop.actionLabel,
         actionHref: stop.actionHref,
       }
@@ -788,7 +789,7 @@ export default function OfficeTour() {
           title: `Moving to ${stop.title}`,
           description: "The camera is taking a direct route above the office and descending at the selected pointer.",
           detail: "Rise · Travel · Descend",
-          meta: `Point ${String(activeStop + 1).padStart(2, "0")}`,
+          meta: `Point ${String(pointNumber).padStart(2, "0")}`,
           actionLabel: null,
           actionHref: null,
         }
