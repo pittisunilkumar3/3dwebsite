@@ -669,6 +669,7 @@ export default function OfficeTour() {
   const navigationIdRef = useRef(0);
   const activeFrameRef = useRef(0);
   const [activeFrame, setActiveFrame] = useState(0);
+  const [isLanding, setIsLanding] = useState(true);
   const [isNavigating, setIsNavigating] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
 
@@ -684,6 +685,7 @@ export default function OfficeTour() {
     const updateFromScroll = () => {
       const maxScroll = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
       const nextProgress = THREE.MathUtils.clamp(window.scrollY / maxScroll, 0, 1);
+      setIsLanding(window.scrollY <= 8);
       progressRef.current = nextProgress;
       const nextActiveFrame = Math.min(
         TOUR_FRAMES.length - 1,
@@ -730,6 +732,7 @@ export default function OfficeTour() {
       progressRef.current = nextProgress;
       activeFrameRef.current = nextFrame;
       setActiveFrame(nextFrame);
+      setIsLanding(nextFrame === 0);
 
       // Jump the document directly to the selected chapter. CameraRig owns the
       // visible over-wall flight, so intermediate stops never activate.
@@ -796,7 +799,7 @@ export default function OfficeTour() {
       : story;
 
   return (
-    <main className="office-tour">
+    <main className={`office-tour${isLanding ? " is-landing" : ""}`}>
       <div className="scene-stage" aria-label="Interactive three-dimensional office tour">
         <Canvas
           dpr={[1, 1.5]}
@@ -825,6 +828,25 @@ export default function OfficeTour() {
       </div>
 
       <LoadingScreen />
+
+      <section className={`landing-hero${isLanding ? "" : " is-hidden"}`} aria-labelledby="landing-title">
+        <p className="landing-eyebrow">ProDyum IT · Digital Growth Partner</p>
+        <h1 id="landing-title">
+          Helping Businesses Grow Through
+          <span>Digital Marketing &amp; Technology</span>
+        </h1>
+        <p className="landing-description">
+          ProDyum IT Pvt Ltd delivers professional Digital Marketing, Branding, Web Development, and Multimedia Solutions that help businesses build a strong digital presence and grow online.
+        </p>
+        <div className="landing-actions">
+          <a className="landing-primary" href="https://prodyum.in/it/services">
+            Our Services <span aria-hidden="true">↗</span>
+          </a>
+          <a className="landing-secondary" href="https://prodyum.in/it/contact">
+            Contact Us <span aria-hidden="true">→</span>
+          </a>
+        </div>
+      </section>
 
       <header className="tour-header">
         <a
@@ -875,43 +897,45 @@ export default function OfficeTour() {
         </ol>
       </nav>
 
-      <section className={`story-card${stop ? "" : " is-overview"}${isNavigating ? " is-travelling" : ""}`} aria-live="polite" aria-atomic="true">
-        <div className="story-meta">
-          <span>{presentedStory.meta}</span>
-          <span>{presentedStory.eyebrow}</span>
-        </div>
-        <h1>{presentedStory.title}</h1>
-        <p>{presentedStory.description}</p>
-        <div className="story-detail">
-          <span aria-hidden="true" />
-          {presentedStory.detail}
-        </div>
-        {presentedStory.actionHref && presentedStory.actionLabel ? (
-          <a
-            className="story-cta"
-            href={presentedStory.actionHref}
-            target="_blank"
-            rel="noreferrer"
-            aria-label={`${presentedStory.actionLabel} on ProDyum IT`}
-          >
-            {presentedStory.actionLabel}
-            <span aria-hidden="true">↗</span>
-          </a>
-        ) : null}
-        <div className="story-actions">
-          <button type="button" onClick={() => goToFrame(Math.max(activeFrame - 1, 0))} disabled={activeFrame === 0}>
-            Previous view
-          </button>
-          <button
-            type="button"
-            className="next-action"
-            onClick={() => goToFrame(Math.min(activeFrame + 1, TOUR_FRAMES.length - 1))}
-            disabled={activeFrame === TOUR_FRAMES.length - 1}
-          >
-            Next view <span aria-hidden="true">↘</span>
-          </button>
-        </div>
-      </section>
+      {activeFrame > 0 ? (
+        <section className={`story-card${stop ? "" : " is-overview"}${isNavigating ? " is-travelling" : ""}`} aria-live="polite" aria-atomic="true">
+          <div className="story-meta">
+            <span>{presentedStory.meta}</span>
+            <span>{presentedStory.eyebrow}</span>
+          </div>
+          <h1>{presentedStory.title}</h1>
+          <p>{presentedStory.description}</p>
+          <div className="story-detail">
+            <span aria-hidden="true" />
+            {presentedStory.detail}
+          </div>
+          {presentedStory.actionHref && presentedStory.actionLabel ? (
+            <a
+              className="story-cta"
+              href={presentedStory.actionHref}
+              target="_blank"
+              rel="noreferrer"
+              aria-label={`${presentedStory.actionLabel} on ProDyum IT`}
+            >
+              {presentedStory.actionLabel}
+              <span aria-hidden="true">↗</span>
+            </a>
+          ) : null}
+          <div className="story-actions">
+            <button type="button" onClick={() => goToFrame(Math.max(activeFrame - 1, 0))} disabled={activeFrame === 0}>
+              Previous view
+            </button>
+            <button
+              type="button"
+              className="next-action"
+              onClick={() => goToFrame(Math.min(activeFrame + 1, TOUR_FRAMES.length - 1))}
+              disabled={activeFrame === TOUR_FRAMES.length - 1}
+            >
+              Next view <span aria-hidden="true">↘</span>
+            </button>
+          </div>
+        </section>
+      ) : null}
 
       <div className={`scroll-cue${activeFrame > 0 ? " is-hidden" : ""}`} aria-hidden="true">
         <span />

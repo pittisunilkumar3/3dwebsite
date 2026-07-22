@@ -33,6 +33,11 @@ test("server-renders the sixteen-point office tour", async () => {
   assert.match(html, /Explore ProDyum IT services through a scroll-driven/i);
   assert.match(html, /og-16\.png/i);
   assert.match(html, /Interactive three-dimensional office tour/i);
+  assert.match(html, /Helping Businesses Grow Through/i);
+  assert.match(html, /Digital Marketing &amp; Technology/i);
+  assert.match(html, /ProDyum IT Pvt Ltd delivers professional Digital Marketing/i);
+  assert.match(html, /href="https:\/\/prodyum\.in\/it\/services"/i);
+  assert.match(html, /href="https:\/\/prodyum\.in\/it\/contact"/i);
   assert.match(html, /Stop 1: Reception desk/i);
   assert.match(html, /Stop 4: Interview table/i);
   assert.match(html, /Stop 11: Conference room/i);
@@ -67,6 +72,8 @@ test("keeps the authored camera and model rules in place", async () => {
   assert.match(tour, /actionHref: "https:\/\/prodyum\.in\/it\/contact"/);
   assert.match(tour, /className="brand prodyum-brand"/);
   assert.match(tour, /className="story-cta"/);
+  assert.match(tour, /className={`landing-hero\$\{isLanding \? "" : " is-hidden"\}`}/);
+  assert.match(tour, /setIsLanding\(window\.scrollY <= 8\)/);
   assert.match(tour, /onNavigationSettled/);
   assert.equal([...tour.matchAll(/contentTitle: "/g)].length, 16);
   assert.equal([...tour.matchAll(/actionLabel: "/g)].length, 16);
