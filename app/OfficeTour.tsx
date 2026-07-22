@@ -303,8 +303,8 @@ const TOUR_STOPS: TourStop[] = [
 
 // The landing overview is composed slightly to the right so the office remains
 // visible beside the editorial hero panel instead of sitting behind the copy.
-const TOP_VIEW_POSITION = new THREE.Vector3(11, 22, -9.8);
-const TOP_VIEW_TARGET = new THREE.Vector3(11, 0, -10.8);
+const TOP_VIEW_POSITION = new THREE.Vector3(8.3, 22, -9.8);
+const TOP_VIEW_TARGET = new THREE.Vector3(8.3, 0, -10.8);
 const TOP_VIEW_FOV = 52;
 const SAFE_TRAVEL_HEIGHT = 7.5;
 
@@ -835,6 +835,7 @@ export default function OfficeTour() {
         <div className="landing-copy">
           <p className="landing-overline">
             <span>ProDyum IT Pvt Ltd</span>
+            <i aria-hidden="true" />
             <span>Digital growth partner</span>
           </p>
           <h1 id="landing-title">
@@ -854,12 +855,6 @@ export default function OfficeTour() {
               <span>Contact Us</span><i aria-hidden="true">↗</i>
             </a>
           </div>
-        </div>
-        <div className="landing-view-count" aria-hidden="true">
-          <span>Real-time office</span>
-          <strong>00</strong>
-          <i />
-          <small>16</small>
         </div>
       </section>
 

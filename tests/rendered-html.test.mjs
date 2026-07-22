@@ -58,7 +58,7 @@ test("keeps the authored camera and model rules in place", async () => {
 
   assert.match(tour, /const VIEWING_DISTANCE = 4;/);
   assert.match(tour, /const SAFE_TRAVEL_HEIGHT = 7\.5;/);
-  assert.match(tour, /const TOP_VIEW_POSITION = new THREE\.Vector3\(11, 22, -9\.8\)/);
+  assert.match(tour, /const TOP_VIEW_POSITION = new THREE\.Vector3\(8\.3, 22, -9\.8\)/);
   assert.match(tour, /TOUR_STOPS\.flatMap<TourFrame>/);
   assert.match(tour, /material\.side = THREE\.DoubleSide/);
   assert.match(tour, /title: "Reception desk"[\s\S]*?target: \[3\.3, 0\.85, -12\.67\]/);

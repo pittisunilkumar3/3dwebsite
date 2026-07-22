@@ -225,7 +225,7 @@ a:focus-visible {
   inset: 0;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: center;
   padding: 108px clamp(36px, 5vw, 84px) 82px;
   opacity: 1;
   visibility: visible;
@@ -238,7 +238,7 @@ a:focus-visible {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(270deg, rgba(5, 7, 9, 0.98) 0%, rgba(5, 7, 9, 0.9) 31%, rgba(5, 7, 9, 0.45) 52%, rgba(5, 7, 9, 0.04) 75%),
+    radial-gradient(ellipse 52% 76% at 50% 50%, rgba(5, 7, 9, 0.9) 0%, rgba(5, 7, 9, 0.7) 42%, rgba(5, 7, 9, 0.16) 75%, transparent 100%),
     linear-gradient(180deg, rgba(5, 7, 9, 0.44), transparent 24%, transparent 68%, rgba(5, 7, 9, 0.56));
   pointer-events: none;
 }
@@ -261,36 +261,45 @@ a:focus-visible {
 .landing-copy {
   position: relative;
   z-index: 1;
-  width: min(620px, 44vw);
+  width: min(900px, calc(100vw - 120px));
+  text-align: center;
   pointer-events: auto;
-  transform: translateX(0);
+  transform: translateY(0);
   transition: transform 560ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .landing-copy::before {
   content: "";
   position: absolute;
-  top: 32px;
-  left: -27px;
-  width: 1px;
-  height: 92px;
-  background: linear-gradient(180deg, var(--prodyum-blue), var(--prodyum-green), transparent);
+  top: 27px;
+  left: 50%;
+  width: 112px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--prodyum-blue), var(--prodyum-green), transparent);
+  transform: translateX(-50%);
 }
 
 .landing-hero.is-hidden .landing-copy {
-  transform: translateX(36px);
+  transform: translateY(-28px);
 }
 
 .landing-overline {
   margin: 0;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 24px;
+  justify-content: center;
+  gap: 11px;
   color: rgba(243, 239, 230, 0.52);
   font: 600 8px/1.2 var(--font-geist-mono), monospace;
   letter-spacing: 0.18em;
   text-transform: uppercase;
+}
+
+.landing-overline i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(243, 239, 230, 0.38);
 }
 
 .landing-overline > span:last-child {
@@ -301,7 +310,7 @@ a:focus-visible {
   margin: clamp(26px, 3.4vh, 38px) 0 0;
   color: #fff;
   font-family: var(--font-geist-sans), Arial, sans-serif;
-  font-size: clamp(64px, 6vw, 108px);
+  font-size: clamp(66px, 6.5vw, 112px);
   letter-spacing: -0.072em;
   line-height: 0.78;
 }
@@ -342,12 +351,14 @@ a:focus-visible {
   color: rgba(243, 239, 230, 0.66);
   font-size: clamp(13px, 0.9vw, 15px);
   line-height: 1.7;
+  margin-inline: auto;
 }
 
 .landing-actions {
   margin-top: clamp(25px, 3.4vh, 36px);
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 28px;
 }
 
@@ -402,40 +413,6 @@ a:focus-visible {
 
 .landing-secondary:hover {
   color: var(--prodyum-green);
-}
-
-.landing-view-count {
-  position: absolute;
-  z-index: 1;
-  left: clamp(36px, 5vw, 84px);
-  bottom: 101px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: rgba(243, 239, 230, 0.46);
-  font: 600 8px/1 var(--font-geist-mono), monospace;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.landing-view-count span {
-  margin-right: 12px;
-}
-
-.landing-view-count strong {
-  color: #fff;
-  font: 500 11px/1 var(--font-geist-mono), monospace;
-}
-
-.landing-view-count i {
-  width: 54px;
-  height: 1px;
-  background: linear-gradient(90deg, var(--prodyum-blue), var(--prodyum-green));
-}
-
-.landing-view-count small {
-  color: rgba(243, 239, 230, 0.52);
-  font: inherit;
 }
 
 .office-tour.is-landing .tour-rail,
@@ -780,12 +757,14 @@ a:focus-visible {
 .scroll-cue {
   position: fixed;
   z-index: 55;
-  right: 48px;
+  left: 50%;
   bottom: 38px;
   display: flex;
   align-items: center;
   gap: 14px;
   color: rgba(243, 239, 230, 0.7);
+  text-align: left;
+  transform: translateX(-50%);
   transition: opacity 260ms ease;
 }
 
@@ -994,13 +973,13 @@ a:focus-visible {
 
   .landing-hero {
     padding: 88px 22px 70px;
-    align-items: flex-end;
-    justify-content: flex-start;
+    align-items: center;
+    justify-content: center;
   }
 
   .landing-hero::before {
     background:
-      linear-gradient(0deg, rgba(5, 7, 9, 0.99) 0%, rgba(5, 7, 9, 0.88) 51%, rgba(5, 7, 9, 0.1) 90%),
+      radial-gradient(ellipse 72% 70% at 50% 54%, rgba(5, 7, 9, 0.92) 0%, rgba(5, 7, 9, 0.72) 50%, rgba(5, 7, 9, 0.16) 86%),
       linear-gradient(180deg, rgba(5, 7, 9, 0.42), transparent 28%);
   }
 
@@ -1010,7 +989,6 @@ a:focus-visible {
 
   .landing-copy {
     width: min(650px, 100%);
-    padding-left: 22px;
   }
 
   .landing-copy h1 {
@@ -1019,10 +997,6 @@ a:focus-visible {
 
   .landing-description {
     max-width: 56ch;
-  }
-
-  .landing-view-count {
-    display: none;
   }
 
   .tour-rail {
@@ -1119,7 +1093,7 @@ a:focus-visible {
   }
 
   .scroll-cue {
-    right: 22px;
+    left: 50%;
     bottom: 18px;
   }
 
@@ -1151,13 +1125,14 @@ a:focus-visible {
   }
 
   .landing-copy {
-    padding-left: 14px;
+    width: 100%;
   }
 
   .landing-copy::before {
-    left: 0;
-    top: 25px;
-    height: 74px;
+    top: 24px;
+    left: 50%;
+    width: 84px;
+    height: 1px;
   }
 
   .landing-copy h1 {
