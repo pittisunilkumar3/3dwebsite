@@ -6,7 +6,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
   const host = requestHeaders.get("host") ?? "localhost:3000";
   const protocol = requestHeaders.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-  const socialImage = `${protocol}://${host}/og-16.png`;
+  const socialImage = `${protocol}://${host}/og.png`;
   const title = "ProDyum IT — Interactive 3D Office";
   const description = "Explore ProDyum IT services through a scroll-driven, real-time 3D office experience.";
 
@@ -17,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
       title,
       description,
       type: "website",
-      images: [{ url: socialImage, width: 1740, height: 904, alt: "ProDyum IT interactive office tour with a numbered 3D route" }],
+      images: [{ url: socialImage, width: 1731, height: 909, alt: "ProDyum IT digital growth experience with sixteen interactive 3D office viewpoints" }],
     },
     twitter: {
       card: "summary_large_image",

@@ -31,10 +31,10 @@ test("server-renders the sixteen-point office tour", async () => {
   const html = await response.text();
   assert.match(html, /<title>ProDyum IT — Interactive 3D Office<\/title>/i);
   assert.match(html, /Explore ProDyum IT services through a scroll-driven/i);
-  assert.match(html, /og-16\.png/i);
+  assert.match(html, /og\.png/i);
   assert.match(html, /Interactive three-dimensional office tour/i);
   assert.match(html, /Helping Businesses Grow Through/i);
-  assert.match(html, /Digital Marketing <em>&amp;<\/em> Technology/i);
+  assert.match(html, /Digital<\/strong><strong class="landing-word">Marketing<\/strong><strong class="landing-technology"><em>&amp;<\/em> Technology/i);
   assert.match(html, /ProDyum IT Pvt Ltd delivers professional Digital Marketing/i);
   assert.match(html, /href="https:\/\/prodyum\.in\/it\/services"/i);
   assert.match(html, /href="https:\/\/prodyum\.in\/it\/contact"/i);
@@ -53,12 +53,12 @@ test("keeps the authored camera and model rules in place", async () => {
     readFile(new URL("../app/OfficeTour.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     access(new URL("../public/police-office-web.glb", import.meta.url)),
-    access(new URL("../public/og-16.png", import.meta.url)),
+    access(new URL("../public/og.png", import.meta.url)),
   ]);
 
   assert.match(tour, /const VIEWING_DISTANCE = 4;/);
   assert.match(tour, /const SAFE_TRAVEL_HEIGHT = 7\.5;/);
-  assert.match(tour, /const TOP_VIEW_POSITION = new THREE\.Vector3\(5\.6, 22, -9\.8\)/);
+  assert.match(tour, /const TOP_VIEW_POSITION = new THREE\.Vector3\(11, 22, -9\.8\)/);
   assert.match(tour, /TOUR_STOPS\.flatMap<TourFrame>/);
   assert.match(tour, /material\.side = THREE\.DoubleSide/);
   assert.match(tour, /title: "Reception desk"[\s\S]*?target: \[3\.3, 0\.85, -12\.67\]/);
@@ -75,7 +75,7 @@ test("keeps the authored camera and model rules in place", async () => {
   assert.match(tour, /className="story-cta"/);
   assert.match(tour, /className={`landing-hero\$\{isLanding \? "" : " is-hidden"\}`}/);
   assert.match(tour, /setIsLanding\(window\.scrollY <= 8\)/);
-  assert.match(tour, /Live digital experience/);
+  assert.match(tour, /Digital growth partner/);
   assert.match(tour, /First stop · Reception/);
   assert.match(tour, /onNavigationSettled/);
   assert.equal([...tour.matchAll(/contentTitle: "/g)].length, 16);
@@ -84,5 +84,5 @@ test("keeps the authored camera and model rules in place", async () => {
   assert.match(tour, /title: "Office refrigerator"/);
   assert.match(tour, /title: "Water dispenser"/);
   assert.match(tour, /title: "Evidence box"/);
-  assert.match(layout, /socialImage = `\$\{protocol\}:\/\/\$\{host\}\/og-16\.png`/);
+  assert.match(layout, /socialImage = `\$\{protocol\}:\/\/\$\{host\}\/og\.png`/);
 });
