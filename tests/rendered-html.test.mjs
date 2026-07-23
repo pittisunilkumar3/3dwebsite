@@ -69,7 +69,7 @@ test("keeps the authored camera and model rules in place", async () => {
   assert.match(tour, /type NavigationRequest/);
   assert.match(tour, /CameraRig owns the[\s\S]*?intermediate stops never activate/);
   assert.match(tour, /window\.scrollTo\(\{ top: nextProgress \* maxScroll, behavior: "auto" \}\)/);
-  assert.match(tour, /contentTitle: "Digital Solutions Partner"/);
+  assert.match(tour, /contentTitle: "ProDyum IT"/);
   assert.match(tour, /contentTitle: "Web Development"/);
   assert.match(tour, /contentTitle: "Free Consultation"/);
   assert.match(tour, /actionHref: "https:\/\/prodyum\.in\/it\/contact"/);
@@ -97,6 +97,12 @@ test("keeps the authored camera and model rules in place", async () => {
   assert.match(tour, /Promotional Videos/);
   assert.match(tour, /Video Editing/);
   assert.match(tour, /const showServicesFlow = activeStop === 1 && !isNavigating/);
+  assert.match(tour, /const showCompanyOverview = activeStop === 0 && !isNavigating/);
+  assert.match(tour, /function CompanyOverview/);
+  assert.match(tour, /COMPANY_CAPABILITIES\.map/);
+  assert.match(tour, /Startups & SMEs/);
+  assert.match(tour, /One partner for/);
+  assert.match(tour, /From first idea to measurable digital presence/);
   assert.match(tour, /className={`landing-hero\$\{isLanding \? "" : " is-hidden"\}`}/);
   assert.match(tour, /setIsLanding\(window\.scrollY <= 8\)/);
   assert.match(tour, /Digital Solutions Partner/);

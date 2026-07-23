@@ -106,12 +106,12 @@ function getTourViewTarget(stop: TourStop, result = new THREE.Vector3()) {
 
 const TOUR_STOPS: TourStop[] = [
   {
-    eyebrow: "ProDyum IT / Hyderabad",
+    eyebrow: "Company / Overview",
     title: "Reception desk",
-    contentTitle: "Digital Solutions Partner",
-    description: "ProDyum IT helps businesses grow through technology, creativity, and strategic digital marketing.",
-    detail: "Digital marketing · Branding · Web · Multimedia",
-    actionLabel: "Learn About Us",
+    contentTitle: "ProDyum IT",
+    description: "A Hyderabad-based digital solutions company combining marketing, design, web development, and multimedia to help businesses grow online.",
+    detail: "Strategy · Creativity · Technology",
+    actionLabel: "Explore Our Story",
     actionHref: "https://prodyum.in/it/about",
     target: [3.3, 0.85, -12.67],
     viewDirection: [-0.7, -0.72],
@@ -330,6 +330,42 @@ const TOUR_STOPS: TourStop[] = [
     fov: 42,
   },
 ];
+
+const COMPANY_CAPABILITIES = [
+  {
+    code: "01",
+    title: "Digital Marketing",
+    description: "Social media, performance campaigns, SEO, YouTube, and content strategy.",
+    color: "#35c86c",
+  },
+  {
+    code: "02",
+    title: "Branding & Design",
+    description: "Brand identity, campaign creatives, graphic design, and UI/UX.",
+    color: "#149ee7",
+  },
+  {
+    code: "03",
+    title: "Web Development",
+    description: "Business, corporate, landing-page, and e-commerce experiences.",
+    color: "#f4b568",
+  },
+  {
+    code: "04",
+    title: "Video & Multimedia",
+    description: "Product shoots, promotional films, social video, and editing.",
+    color: "#c58aff",
+  },
+] as const;
+
+const COMPANY_AUDIENCES = [
+  "Startups & SMEs",
+  "Real estate",
+  "Education",
+  "E-commerce",
+  "Entertainment",
+  "Local businesses",
+] as const;
 
 const SERVICE_BRANCHES: ServiceBranch[] = [
   {
@@ -804,6 +840,128 @@ function Hotspots({
   );
 }
 
+function CompanyOverview({
+  onPrevious,
+  onNext,
+}: {
+  onPrevious: () => void;
+  onNext: () => void;
+}) {
+  return (
+    <section
+      className="company-overview"
+      aria-labelledby="company-overview-title"
+      aria-live="polite"
+    >
+      <div className="company-overview-orbit" aria-hidden="true">
+        <span />
+        <span />
+      </div>
+
+      <header className="company-overview-header">
+        <div>
+          <span className="company-overview-point">Point 01</span>
+          <span className="company-overview-location">Reception · Hyderabad</span>
+        </div>
+        <p>Company overview</p>
+      </header>
+
+      <div className="company-overview-grid">
+        <div className="company-overview-intro">
+          <p className="company-overview-kicker">
+            ProDyum IT Pvt Ltd
+          </p>
+          <h1 id="company-overview-title">
+            One partner for
+            <strong>digital growth.</strong>
+          </h1>
+          <p className="company-overview-summary">
+            A Hyderabad-based digital solutions company bringing strategy,
+            creativity, and technology together to build stronger brands and
+            meaningful online growth.
+          </p>
+
+          <div className="company-overview-promise">
+            <span aria-hidden="true">ϟ</span>
+            <div>
+              <small>Our promise</small>
+              <strong>From first idea to measurable digital presence.</strong>
+            </div>
+          </div>
+
+          <a
+            className="company-overview-link"
+            href="https://prodyum.in/it/about"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Explore our complete story <span aria-hidden="true">↗</span>
+          </a>
+        </div>
+
+        <div className="company-overview-details">
+          <div className="company-overview-section-heading">
+            <span>What we do</span>
+            <small>End-to-end capabilities</small>
+          </div>
+
+          <div className="company-capabilities">
+            {COMPANY_CAPABILITIES.map((capability) => (
+              <article
+                key={capability.code}
+                className="company-capability"
+                style={{ "--capability-color": capability.color } as CSSProperties}
+              >
+                <span>{capability.code}</span>
+                <div>
+                  <h2>{capability.title}</h2>
+                  <p>{capability.description}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+
+          <div className="company-purpose">
+            <article>
+              <span>Mission</span>
+              <p>
+                Empower businesses with modern digital solutions that improve
+                visibility, engagement, and growth.
+              </p>
+            </article>
+            <article>
+              <span>Vision</span>
+              <p>
+                Become a trusted digital partner for ambitious businesses
+                across India.
+              </p>
+            </article>
+          </div>
+        </div>
+      </div>
+
+      <footer className="company-overview-footer">
+        <div className="company-audiences" aria-label="Industries and clients we serve">
+          <span>Built for</span>
+          <div>
+            {COMPANY_AUDIENCES.map((audience) => (
+              <small key={audience}>{audience}</small>
+            ))}
+          </div>
+        </div>
+        <div className="company-overview-actions">
+          <button type="button" onClick={onPrevious}>
+            Previous view
+          </button>
+          <button type="button" className="next-action" onClick={onNext}>
+            Continue tour <span aria-hidden="true">↘</span>
+          </button>
+        </div>
+      </footer>
+    </section>
+  );
+}
+
 function SceneServicesMap({
   visible,
   selectedIndex,
@@ -1133,10 +1291,11 @@ export default function OfficeTour() {
           actionHref: null,
         }
       : story;
+  const showCompanyOverview = activeStop === 0 && !isNavigating;
   const showServicesFlow = activeStop === 1 && !isNavigating;
 
   return (
-    <main className={`office-tour${isLanding ? " is-landing" : ""}${showServicesFlow ? " is-services" : ""}`}>
+    <main className={`office-tour${isLanding ? " is-landing" : ""}${showCompanyOverview ? " is-company-overview" : ""}${showServicesFlow ? " is-services" : ""}`}>
       <div className="scene-stage" aria-label="Interactive three-dimensional office tour">
         <Canvas
           dpr={[1, 1.5]}
@@ -1227,7 +1386,14 @@ export default function OfficeTour() {
         </ol>
       </nav>
 
-      {activeFrame > 0 && !showServicesFlow ? (
+      {showCompanyOverview ? (
+        <CompanyOverview
+          onPrevious={() => goToFrame(Math.max(activeFrame - 1, 0))}
+          onNext={() => goToFrame(Math.min(activeFrame + 1, TOUR_FRAMES.length - 1))}
+        />
+      ) : null}
+
+      {activeFrame > 0 && !showCompanyOverview && !showServicesFlow ? (
         <section className={`story-card${stop ? "" : " is-overview"}${isNavigating ? " is-travelling" : ""}`} aria-live="polite" aria-atomic="true">
           <div className="story-meta">
             <span>{presentedStory.meta}</span>
