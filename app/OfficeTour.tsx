@@ -47,6 +47,7 @@ type NavigationRequest = {
 
 type CameraFlight = {
   requestId: number;
+  frameIndex: number;
   elapsed: number;
   duration: number;
   cruiseHeight: number;
@@ -79,6 +80,10 @@ type ServiceItem = {
 };
 
 const VIEWING_DISTANCE = 4;
+const CAMERA_ARRIVAL_PROGRESS_EPSILON = 0.06;
+const CAMERA_ARRIVAL_POSITION_EPSILON = 0.1;
+const CAMERA_ARRIVAL_TARGET_EPSILON = 0.08;
+const CAMERA_ARRIVAL_FOV_EPSILON = 0.12;
 
 function getTourViewPosition(stop: TourStop, result = new THREE.Vector3()) {
   const target = new THREE.Vector3(...stop.target);
@@ -505,11 +510,13 @@ function getFrameFov(frame: TourFrame) {
 function CameraRig({
   progressRef,
   navigationRequestRef,
+  onFrameArrivalChange,
   onNavigationSettled,
   reducedMotion,
 }: {
   progressRef: React.MutableRefObject<number>;
   navigationRequestRef: React.MutableRefObject<NavigationRequest | null>;
+  onFrameArrivalChange: (frameIndex: number | null) => void;
   onNavigationSettled: () => void;
   reducedMotion: boolean;
 }) {
@@ -527,6 +534,16 @@ function CameraRig({
   const smoothTarget = useRef(targets[0].clone());
   const handledRequestId = useRef(0);
   const flightRef = useRef<CameraFlight | null>(null);
+  const reportedArrivalRef = useRef<number | null>(null);
+
+  const reportFrameArrival = useCallback(
+    (frameIndex: number | null) => {
+      if (reportedArrivalRef.current === frameIndex) return;
+      reportedArrivalRef.current = frameIndex;
+      onFrameArrivalChange(frameIndex);
+    },
+    [onFrameArrivalChange],
+  );
 
   useFrame(({ camera }, delta) => {
     const desiredPosition = desiredPositionRef.current;
@@ -539,8 +556,10 @@ function CameraRig({
     ) {
       handledRequestId.current = navigationRequest.id;
       const endPosition = positions[navigationRequest.frameIndex];
+      reportFrameArrival(null);
       flightRef.current = {
         requestId: navigationRequest.id,
+        frameIndex: navigationRequest.frameIndex,
         elapsed: 0,
         duration: reducedMotion ? 0.01 : 2.2,
         cruiseHeight: Math.max(
@@ -634,6 +653,7 @@ function CameraRig({
         if (navigationRequestRef.current?.id === flight.requestId) {
           navigationRequestRef.current = null;
         }
+        reportFrameArrival(flight.frameIndex);
         onNavigationSettled();
       }
       return;
@@ -731,6 +751,28 @@ function CameraRig({
       camera.fov = THREE.MathUtils.damp(camera.fov, desiredFov, speed, delta);
       camera.updateProjectionMatrix();
     }
+
+    const nearestFrame = Math.round(scaled);
+    const isProgressAligned =
+      Math.abs(scaled - nearestFrame) <= CAMERA_ARRIVAL_PROGRESS_EPSILON;
+    const isPositionAligned =
+      camera.position.distanceTo(positions[nearestFrame]) <=
+      CAMERA_ARRIVAL_POSITION_EPSILON;
+    const isTargetAligned =
+      smoothTarget.current.distanceTo(targets[nearestFrame]) <=
+      CAMERA_ARRIVAL_TARGET_EPSILON;
+    const isFovAligned =
+      !(camera instanceof THREE.PerspectiveCamera) ||
+      Math.abs(camera.fov - fovs[nearestFrame]) <= CAMERA_ARRIVAL_FOV_EPSILON;
+
+    reportFrameArrival(
+      isProgressAligned &&
+        isPositionAligned &&
+        isTargetAligned &&
+        isFovAligned
+        ? nearestFrame
+        : null,
+    );
   });
 
   return null;
@@ -998,6 +1040,7 @@ export default function OfficeTour() {
   const navigationIdRef = useRef(0);
   const activeFrameRef = useRef(0);
   const [activeFrame, setActiveFrame] = useState(0);
+  const [arrivedFrame, setArrivedFrame] = useState<number | null>(null);
   const [isLanding, setIsLanding] = useState(true);
   const [isNavigating, setIsNavigating] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -1054,6 +1097,7 @@ export default function OfficeTour() {
       const nextProgress = nextFrame / (TOUR_FRAMES.length - 1);
 
       setIsNavigating(true);
+      setArrivedFrame(null);
       navigationIdRef.current += 1;
       navigationRequestRef.current = {
         id: navigationIdRef.current,
@@ -1074,6 +1118,13 @@ export default function OfficeTour() {
   const handleNavigationSettled = useCallback(() => {
     setIsNavigating(false);
   }, []);
+
+  const handleFrameArrivalChange = useCallback(
+    (frameIndex: number | null) => {
+      setArrivedFrame(frameIndex);
+    },
+    [],
+  );
 
   const goToStop = useCallback(
     (stopIndex: number) => goToFrame(stopIndex * 2 + 1),
@@ -1127,7 +1178,10 @@ export default function OfficeTour() {
           actionHref: null,
         }
       : story;
-  const showServicesFlow = activeStop === 1 && !isNavigating;
+  const showServicesFlow =
+    activeStop === 1 &&
+    arrivedFrame === activeFrame &&
+    !isNavigating;
 
   return (
     <main className={`office-tour${isLanding ? " is-landing" : ""}${showServicesFlow ? " is-services" : ""}`}>
@@ -1152,6 +1206,7 @@ export default function OfficeTour() {
           <CameraRig
             progressRef={progressRef}
             navigationRequestRef={navigationRequestRef}
+            onFrameArrivalChange={handleFrameArrivalChange}
             onNavigationSettled={handleNavigationSettled}
             reducedMotion={reducedMotion}
           />
