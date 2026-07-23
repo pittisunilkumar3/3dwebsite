@@ -400,6 +400,38 @@ a:focus-visible {
   pointer-events: none;
 }
 
+.services-map-heading {
+  position: absolute;
+  z-index: 5;
+  top: 14px;
+  left: 50%;
+  width: 320px;
+  text-align: center;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.services-map-heading > span {
+  color: var(--prodyum-green);
+  font: 650 7px/1 var(--font-geist-mono), monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.services-map-heading h1 {
+  margin: 5px 0 0;
+  color: var(--paper);
+  font: 500 30px/0.95 Georgia, "Times New Roman", serif;
+  letter-spacing: -0.04em;
+}
+
+.services-map-heading p {
+  margin: 6px auto 0;
+  color: rgba(243, 239, 230, 0.58);
+  font-size: 8px;
+  line-height: 1.35;
+}
+
 .services-map {
   position: relative;
   z-index: 1;
@@ -608,6 +640,10 @@ a:focus-visible {
 .service-node.is-selected i {
   background: var(--service-color);
   color: #06100a;
+}
+
+.services-mobile-continue {
+  display: none;
 }
 
 .office-tour.is-services .tour-rail,
@@ -1250,9 +1286,41 @@ a:focus-visible {
 @media (max-width: 760px) {
   .scene-services-flow {
     display: block;
-    padding: 44px 14px 104px;
+    padding: 0 14px 104px;
     overflow-y: auto;
-    overscroll-behavior: contain;
+    overscroll-behavior-y: auto;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+  }
+
+  .services-map-heading {
+    position: sticky;
+    top: 0;
+    left: auto;
+    width: auto;
+    margin: 0 -14px 14px;
+    padding: 16px 16px 14px;
+    border-bottom: 1px solid rgba(243, 239, 230, 0.12);
+    background: rgba(7, 11, 14, 0.9);
+    backdrop-filter: blur(14px);
+    text-align: left;
+    transform: none;
+    pointer-events: none;
+  }
+
+  .services-map-heading > span {
+    font-size: 7px;
+  }
+
+  .services-map-heading h1 {
+    margin-top: 6px;
+    font-size: 31px;
+  }
+
+  .services-map-heading p {
+    max-width: 34ch;
+    margin: 7px 0 0;
+    font-size: 9px;
   }
 
   .services-map {
@@ -1309,6 +1377,30 @@ a:focus-visible {
 
   .service-node-copy p {
     font-size: 10px;
+  }
+
+  .services-mobile-continue {
+    width: 100%;
+    min-height: 54px;
+    margin-top: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    border: 1px solid rgba(53, 200, 108, 0.52);
+    border-radius: 4px;
+    background: linear-gradient(110deg, rgba(20, 158, 231, 0.2), rgba(53, 200, 108, 0.18));
+    color: var(--paper);
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+  }
+
+  .services-mobile-continue span {
+    color: var(--prodyum-green);
+    font-size: 14px;
   }
 }
 
@@ -1404,6 +1496,11 @@ a:focus-visible {
   .scene-services-flow {
     padding-right: 10px;
     padding-left: 10px;
+  }
+
+  .services-map-heading {
+    margin-right: -10px;
+    margin-left: -10px;
   }
 }
 

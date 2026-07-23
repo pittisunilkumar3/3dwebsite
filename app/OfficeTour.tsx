@@ -8,6 +8,8 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  type TouchEvent as ReactTouchEvent,
+  type WheelEvent as ReactWheelEvent,
 } from "react";
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
 import { useProgress } from "@react-three/drei/core/Progress.js";
@@ -806,11 +808,81 @@ function SceneServicesMap({
   visible,
   selectedIndex,
   onSelect,
+  onPrevious,
+  onNext,
 }: {
   visible: boolean;
   selectedIndex: number;
   onSelect: (index: number) => void;
+  onPrevious: () => void;
+  onNext: () => void;
 }) {
+  const touchStartYRef = useRef<number | null>(null);
+  const boundaryLockRef = useRef(false);
+
+  const navigateAtBoundary = useCallback(
+    (direction: "previous" | "next") => {
+      if (boundaryLockRef.current) return;
+      boundaryLockRef.current = true;
+      if (direction === "next") {
+        onNext();
+      } else {
+        onPrevious();
+      }
+      window.setTimeout(() => {
+        boundaryLockRef.current = false;
+      }, 800);
+    },
+    [onNext, onPrevious],
+  );
+
+  const handleServicesWheel = useCallback(
+    (event: ReactWheelEvent<HTMLElement>) => {
+      const element = event.currentTarget;
+      if (element.scrollHeight <= element.clientHeight + 2) return;
+      const atTop = element.scrollTop <= 2;
+      const atBottom =
+        element.scrollTop + element.clientHeight >= element.scrollHeight - 2;
+
+      if ((event.deltaY > 0 && atBottom) || (event.deltaY < 0 && atTop)) {
+        event.preventDefault();
+        navigateAtBoundary(event.deltaY > 0 ? "next" : "previous");
+      }
+    },
+    [navigateAtBoundary],
+  );
+
+  const handleServicesTouchStart = useCallback(
+    (event: ReactTouchEvent<HTMLElement>) => {
+      touchStartYRef.current = event.touches[0]?.clientY ?? null;
+    },
+    [],
+  );
+
+  const handleServicesTouchMove = useCallback(
+    (event: ReactTouchEvent<HTMLElement>) => {
+      const startY = touchStartYRef.current;
+      const currentY = event.touches[0]?.clientY;
+      if (startY === null || currentY === undefined) return;
+
+      const gestureDistance = startY - currentY;
+      if (Math.abs(gestureDistance) < 24) return;
+
+      const element = event.currentTarget;
+      if (element.scrollHeight <= element.clientHeight + 2) return;
+      const atTop = element.scrollTop <= 2;
+      const atBottom =
+        element.scrollTop + element.clientHeight >= element.scrollHeight - 2;
+
+      if ((gestureDistance > 0 && atBottom) || (gestureDistance < 0 && atTop)) {
+        event.preventDefault();
+        touchStartYRef.current = currentY;
+        navigateAtBoundary(gestureDistance > 0 ? "next" : "previous");
+      }
+    },
+    [navigateAtBoundary],
+  );
+
   if (!visible) return null;
 
   return (
@@ -819,7 +891,22 @@ function SceneServicesMap({
       fullscreen
       zIndexRange={[70, 45]}
     >
-      <section className="scene-services-flow" aria-label="Point 2 interactive services">
+      <section
+        className="scene-services-flow"
+        aria-labelledby="services-map-title"
+        onWheel={handleServicesWheel}
+        onTouchStart={handleServicesTouchStart}
+        onTouchMove={handleServicesTouchMove}
+        onTouchEnd={() => {
+          touchStartYRef.current = null;
+        }}
+      >
+        <header className="services-map-heading">
+          <span>Point 02 · Digital solutions</span>
+          <h1 id="services-map-title">Our Services</h1>
+          <p>Explore every service and continue scrolling to resume the office tour.</p>
+        </header>
+
         <div className="services-map">
           <div className="service-hub" aria-hidden="true">
             <span>02</span>
@@ -872,6 +959,14 @@ function SceneServicesMap({
             );
           })}
         </div>
+
+        <button
+          type="button"
+          className="services-mobile-continue"
+          onClick={onNext}
+        >
+          Continue office tour <span aria-hidden="true">↓</span>
+        </button>
       </section>
     </Html>
   );
@@ -1063,6 +1158,8 @@ export default function OfficeTour() {
               visible={showServicesFlow}
               selectedIndex={selectedServiceIndex}
               onSelect={setSelectedServiceIndex}
+              onPrevious={() => goToFrame(Math.max(activeFrame - 1, 0))}
+              onNext={() => goToFrame(Math.min(activeFrame + 1, TOUR_FRAMES.length - 1))}
             />
           </Suspense>
           <CameraRig

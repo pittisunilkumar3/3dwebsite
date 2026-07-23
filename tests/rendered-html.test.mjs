@@ -50,9 +50,10 @@ test("server-renders the sixteen-point office tour", async () => {
 });
 
 test("keeps the authored camera and model rules in place", async () => {
-  const [tour, layout] = await Promise.all([
+  const [tour, layout, styles] = await Promise.all([
     readFile(new URL("../app/OfficeTour.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
     access(new URL("../public/police-office-web.glb", import.meta.url)),
     access(new URL("../public/og.png", import.meta.url)),
   ]);
@@ -76,6 +77,12 @@ test("keeps the authored camera and model rules in place", async () => {
   assert.match(tour, /className="story-cta"/);
   assert.match(tour, /className="scene-services-flow"/);
   assert.match(tour, /position=\{\[12\.9, 0\.84, -15\.95\]\}[\s\S]*?fullscreen/);
+  assert.match(tour, /id="services-map-title">Our Services/);
+  assert.match(tour, /handleServicesWheel/);
+  assert.match(tour, /handleServicesTouchMove/);
+  assert.match(tour, /element\.scrollHeight <= element\.clientHeight \+ 2/);
+  assert.match(tour, /navigateAtBoundary\(event\.deltaY > 0 \? "next" : "previous"\)/);
+  assert.match(tour, /className="services-mobile-continue"/);
   assert.match(tour, /aria-pressed=\{isSelected\}/);
   assert.match(tour, /INDIVIDUAL_SERVICES\.map/);
   assert.match(tour, /className="service-connector"/);
@@ -102,4 +109,6 @@ test("keeps the authored camera and model rules in place", async () => {
   assert.match(tour, /title: "Water dispenser"/);
   assert.match(tour, /title: "Evidence box"/);
   assert.match(layout, /socialImage = `\$\{protocol\}:\/\/\$\{host\}\/og\.png`/);
+  assert.match(styles, /overscroll-behavior-y: auto/);
+  assert.doesNotMatch(styles, /overscroll-behavior: contain/);
 });
