@@ -838,7 +838,8 @@ export default function OfficeTour() {
             Digital Solutions Partner
           </p>
           <h1 id="landing-title">
-            <span>Helping Businesses Grow Through</span>
+            <span>Helping Businesses Grow</span>
+            <span>Through</span>
             <strong>Digital Marketing &amp;</strong>
             <strong>Technology</strong>
           </h1>

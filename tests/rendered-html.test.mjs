@@ -33,7 +33,7 @@ test("server-renders the sixteen-point office tour", async () => {
   assert.match(html, /Explore ProDyum IT services through a scroll-driven/i);
   assert.match(html, /og\.png/i);
   assert.match(html, /Interactive three-dimensional office tour/i);
-  assert.match(html, /Helping Businesses Grow Through<\/span>/i);
+  assert.match(html, /Helping Businesses Grow<\/span><span>Through/i);
   assert.match(html, /<strong>Digital Marketing &amp;<\/strong><strong>Technology<\/strong>/i);
   assert.match(html, /Digital Solutions Partner/i);
   assert.match(html, /ProDyum IT Pvt Ltd delivers professional Digital Marketing/i);
