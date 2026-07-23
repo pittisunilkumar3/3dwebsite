@@ -886,89 +886,83 @@ function SceneServicesMap({
   if (!visible) return null;
 
   return (
-    <Html
-      position={[12.9, 0.84, -15.95]}
-      fullscreen
-      zIndexRange={[70, 45]}
+    <section
+      className="scene-services-flow"
+      aria-labelledby="services-map-title"
+      onWheel={handleServicesWheel}
+      onTouchStart={handleServicesTouchStart}
+      onTouchMove={handleServicesTouchMove}
+      onTouchEnd={() => {
+        touchStartYRef.current = null;
+      }}
     >
-      <section
-        className="scene-services-flow"
-        aria-labelledby="services-map-title"
-        onWheel={handleServicesWheel}
-        onTouchStart={handleServicesTouchStart}
-        onTouchMove={handleServicesTouchMove}
-        onTouchEnd={() => {
-          touchStartYRef.current = null;
-        }}
-      >
-        <header className="services-map-heading">
-          <span>Point 02 · Digital solutions</span>
-          <h1 id="services-map-title">Our Services</h1>
-          <p>Explore every service and continue scrolling to resume the office tour.</p>
-        </header>
+      <header className="services-map-heading">
+        <span>Point 02 · Digital solutions</span>
+        <h1 id="services-map-title">Our Services</h1>
+        <p>Explore every service and continue scrolling to resume the office tour.</p>
+      </header>
 
-        <div className="services-map">
-          <div className="service-hub" aria-hidden="true">
-            <span>02</span>
-          </div>
-
-          {INDIVIDUAL_SERVICES.map((service, index) => {
-            const isSelected = selectedIndex === index;
-            const serviceY =
-              SERVICE_MAP_ROW_HEIGHT / 2 + service.row * SERVICE_MAP_ROW_STEP;
-            const deltaY = SERVICE_MAP_HUB_Y - serviceY;
-            const connectorLength = Math.hypot(
-              SERVICE_MAP_DIAGONAL_X,
-              deltaY,
-            );
-            const connectorAngle =
-              (Math.atan2(
-                deltaY,
-                service.side === "left"
-                  ? SERVICE_MAP_DIAGONAL_X
-                  : -SERVICE_MAP_DIAGONAL_X,
-              ) *
-                180) /
-              Math.PI;
-            const serviceStyle = {
-              "--service-row": service.row,
-              "--service-color": service.color,
-              "--connector-length": `${connectorLength}px`,
-              "--connector-angle": `${connectorAngle}deg`,
-            } as CSSProperties;
-
-            return (
-              <button
-                key={service.title}
-                type="button"
-                className={`service-node service-node--${service.side}${isSelected ? " is-selected" : ""}`}
-                style={serviceStyle}
-                onClick={() => onSelect(index)}
-                aria-pressed={isSelected}
-                aria-label={`${service.title}, ${service.category}`}
-              >
-                <span className="service-connector" aria-hidden="true" />
-                <span className="service-node-number">{service.code}</span>
-                <span className="service-node-copy">
-                  <strong>{service.title}</strong>
-                  <small>{service.category}</small>
-                  <p>{service.description}</p>
-                </span>
-                <i aria-hidden="true">{isSelected ? "✓" : "↗"}</i>
-              </button>
-            );
-          })}
+      <div className="services-map">
+        <div className="service-hub" aria-hidden="true">
+          <span>02</span>
         </div>
 
-        <button
-          type="button"
-          className="services-mobile-continue"
-          onClick={onNext}
-        >
-          Continue office tour <span aria-hidden="true">↓</span>
-        </button>
-      </section>
-    </Html>
+        {INDIVIDUAL_SERVICES.map((service, index) => {
+          const isSelected = selectedIndex === index;
+          const serviceY =
+            SERVICE_MAP_ROW_HEIGHT / 2 + service.row * SERVICE_MAP_ROW_STEP;
+          const deltaY = SERVICE_MAP_HUB_Y - serviceY;
+          const connectorLength = Math.hypot(
+            SERVICE_MAP_DIAGONAL_X,
+            deltaY,
+          );
+          const connectorAngle =
+            (Math.atan2(
+              deltaY,
+              service.side === "left"
+                ? SERVICE_MAP_DIAGONAL_X
+                : -SERVICE_MAP_DIAGONAL_X,
+            ) *
+              180) /
+            Math.PI;
+          const serviceStyle = {
+            "--service-row": service.row,
+            "--service-color": service.color,
+            "--connector-length": `${connectorLength}px`,
+            "--connector-angle": `${connectorAngle}deg`,
+          } as CSSProperties;
+
+          return (
+            <button
+              key={service.title}
+              type="button"
+              className={`service-node service-node--${service.side}${isSelected ? " is-selected" : ""}`}
+              style={serviceStyle}
+              onClick={() => onSelect(index)}
+              aria-pressed={isSelected}
+              aria-label={`${service.title}, ${service.category}`}
+            >
+              <span className="service-connector" aria-hidden="true" />
+              <span className="service-node-number">{service.code}</span>
+              <span className="service-node-copy">
+                <strong>{service.title}</strong>
+                <small>{service.category}</small>
+                <p>{service.description}</p>
+              </span>
+              <i aria-hidden="true">{isSelected ? "✓" : "↗"}</i>
+            </button>
+          );
+        })}
+      </div>
+
+      <button
+        type="button"
+        className="services-mobile-continue"
+        onClick={onNext}
+      >
+        Continue office tour <span aria-hidden="true">↓</span>
+      </button>
+    </section>
   );
 }
 
@@ -1154,13 +1148,6 @@ export default function OfficeTour() {
             {!showServicesFlow ? (
               <Hotspots active={activeStop} onSelect={goToStop} />
             ) : null}
-            <SceneServicesMap
-              visible={showServicesFlow}
-              selectedIndex={selectedServiceIndex}
-              onSelect={setSelectedServiceIndex}
-              onPrevious={() => goToFrame(Math.max(activeFrame - 1, 0))}
-              onNext={() => goToFrame(Math.min(activeFrame + 1, TOUR_FRAMES.length - 1))}
-            />
           </Suspense>
           <CameraRig
             progressRef={progressRef}
@@ -1174,6 +1161,14 @@ export default function OfficeTour() {
       </div>
 
       <LoadingScreen />
+
+      <SceneServicesMap
+        visible={showServicesFlow}
+        selectedIndex={selectedServiceIndex}
+        onSelect={setSelectedServiceIndex}
+        onPrevious={() => goToFrame(Math.max(activeFrame - 1, 0))}
+        onNext={() => goToFrame(Math.min(activeFrame + 1, TOUR_FRAMES.length - 1))}
+      />
 
       <section className={`landing-hero${isLanding ? "" : " is-hidden"}`} aria-labelledby="landing-title">
         <div className="landing-copy">

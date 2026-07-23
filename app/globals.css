@@ -382,10 +382,15 @@ a:focus-visible {
 
 .scene-services-flow {
   --service-map-scale: 1.05;
-  position: absolute;
+  position: fixed;
   inset: 0;
-  z-index: 2;
+  z-index: 56;
+  width: 100vw;
+  max-width: 100%;
+  height: 100vh;
+  height: 100dvh;
   overflow: hidden;
+  overflow-x: clip;
   pointer-events: auto;
   user-select: none;
 }

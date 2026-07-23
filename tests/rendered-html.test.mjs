@@ -76,7 +76,8 @@ test("keeps the authored camera and model rules in place", async () => {
   assert.doesNotMatch(tour, /className="tour-header"/);
   assert.match(tour, /className="story-cta"/);
   assert.match(tour, /className="scene-services-flow"/);
-  assert.match(tour, /position=\{\[12\.9, 0\.84, -15\.95\]\}[\s\S]*?fullscreen/);
+  assert.doesNotMatch(tour, /position=\{\[12\.9, 0\.84, -15\.95\]\}[\s\S]*?fullscreen/);
+  assert.match(tour, /<LoadingScreen \/>[\s\S]*?<SceneServicesMap/);
   assert.match(tour, /id="services-map-title">Our Services/);
   assert.match(tour, /handleServicesWheel/);
   assert.match(tour, /handleServicesTouchMove/);
@@ -109,6 +110,8 @@ test("keeps the authored camera and model rules in place", async () => {
   assert.match(tour, /title: "Water dispenser"/);
   assert.match(tour, /title: "Evidence box"/);
   assert.match(layout, /socialImage = `\$\{protocol\}:\/\/\$\{host\}\/og\.png`/);
+  assert.match(styles, /\.scene-services-flow \{[\s\S]*?position: fixed;/);
+  assert.match(styles, /height: 100dvh;/);
   assert.match(styles, /overscroll-behavior-y: auto/);
   assert.doesNotMatch(styles, /overscroll-behavior: contain/);
 });
