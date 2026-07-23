@@ -74,9 +74,10 @@ test("keeps the authored camera and model rules in place", async () => {
   assert.match(tour, /actionHref: "https:\/\/prodyum\.in\/it\/contact"/);
   assert.doesNotMatch(tour, /className="tour-header"/);
   assert.match(tour, /className="story-cta"/);
-  assert.match(tour, /className="services-flow"/);
+  assert.match(tour, /className="scene-services-flow"/);
+  assert.match(tour, /position=\{\[12\.9, 0\.84, -15\.95\]\}/);
   assert.match(tour, /aria-pressed=\{isSelected\}/);
-  assert.match(tour, /Point 02 · Interactive service map/);
+  assert.match(tour, /hiddenIndex=\{showServicesFlow \? 1 : null\}/);
   assert.match(tour, /Social Media Management/);
   assert.match(tour, /Brand Identity Design/);
   assert.match(tour, /E-commerce Websites/);

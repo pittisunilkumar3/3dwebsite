@@ -662,13 +662,17 @@ function OfficeModel() {
 function Hotspots({
   active,
   onSelect,
+  hiddenIndex,
 }: {
   active: number | null;
   onSelect: (index: number) => void;
+  hiddenIndex?: number | null;
 }) {
   return (
     <group>
       {TOUR_STOPS.map((stop, index) => {
+        if (index === hiddenIndex) return null;
+
         const isActive = index === active;
         const isNear = active === null || Math.abs(index - active) <= 1;
         return (
@@ -695,104 +699,68 @@ function Hotspots({
   );
 }
 
-function ServicesFlow({
+function SceneServicesMap({
+  visible,
   selectedIndex,
   onSelect,
-  onPrevious,
-  onNext,
 }: {
+  visible: boolean;
   selectedIndex: number;
   onSelect: (index: number) => void;
-  onPrevious: () => void;
-  onNext: () => void;
 }) {
-  const selectedService = SERVICE_BRANCHES[selectedIndex];
+  if (!visible) return null;
 
   return (
-    <section className="services-flow" aria-labelledby="services-flow-title">
-      <div className="services-flow-heading">
-        <div>
-          <span>Point 02 · Interactive service map</span>
-          <h1 id="services-flow-title">Our Services</h1>
+    <Html
+      position={[12.9, 0.84, -15.95]}
+      center
+      distanceFactor={3.4}
+      zIndexRange={[70, 45]}
+    >
+      <section className="scene-services-flow" aria-label="Point 2 interactive services">
+        <div className="services-map">
+          <span className="service-wire service-wire--left-top" aria-hidden="true" />
+          <span className="service-wire service-wire--left-bottom" aria-hidden="true" />
+          <span className="service-wire service-wire--right-top" aria-hidden="true" />
+          <span className="service-wire service-wire--right-bottom" aria-hidden="true" />
+
+          <div className="service-hub" aria-hidden="true">
+            <span>Point</span>
+            <strong>02</strong>
+            <small>Services</small>
+          </div>
+
+          {SERVICE_BRANCHES.map((service, index) => {
+            const position = [
+              "left-top",
+              "left-bottom",
+              "right-top",
+              "right-bottom",
+            ][index];
+            const isSelected = selectedIndex === index;
+
+            return (
+              <button
+                key={service.title}
+                type="button"
+                className={`service-node service-node--${position}${isSelected ? " is-selected" : ""}`}
+                onClick={() => onSelect(index)}
+                aria-pressed={isSelected}
+              >
+                <span className="service-node-number">{service.code}</span>
+                <span className="service-node-copy">
+                  <strong>{service.title}</strong>
+                  <small>
+                    {isSelected ? service.items.join(" · ") : service.summary}
+                  </small>
+                </span>
+                <i aria-hidden="true">{isSelected ? "×" : "+"}</i>
+              </button>
+            );
+          })}
         </div>
-        <p>Select a connected service to see everything included.</p>
-      </div>
-
-      <div className="services-map">
-        <span className="service-wire service-wire--left-top" aria-hidden="true" />
-        <span className="service-wire service-wire--left-bottom" aria-hidden="true" />
-        <span className="service-wire service-wire--right-top" aria-hidden="true" />
-        <span className="service-wire service-wire--right-bottom" aria-hidden="true" />
-
-        <div className="service-hub" aria-hidden="true">
-          <span>Point</span>
-          <strong>02</strong>
-          <small>Services</small>
-        </div>
-
-        {SERVICE_BRANCHES.map((service, index) => {
-          const position = [
-            "left-top",
-            "left-bottom",
-            "right-top",
-            "right-bottom",
-          ][index];
-          const isSelected = selectedIndex === index;
-
-          return (
-            <button
-              key={service.title}
-              type="button"
-              className={`service-node service-node--${position}${isSelected ? " is-selected" : ""}`}
-              onClick={() => onSelect(index)}
-              aria-pressed={isSelected}
-              aria-controls="service-flow-detail"
-            >
-              <span className="service-node-number">{service.code}</span>
-              <span className="service-node-copy">
-                <strong>{service.title}</strong>
-                <small>{service.summary}</small>
-              </span>
-              <i aria-hidden="true">+</i>
-            </button>
-          );
-        })}
-      </div>
-
-      <div
-        className="service-explanation"
-        id="service-flow-detail"
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        <span className="service-explanation-code">{selectedService.code}</span>
-        <div className="service-explanation-copy">
-          <h2>{selectedService.title}</h2>
-          <p>{selectedService.summary}</p>
-        </div>
-        <ul aria-label={`${selectedService.title} includes`}>
-          {selectedService.items.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-        <a
-          href="https://prodyum.in/it/services"
-          target="_blank"
-          rel="noreferrer"
-          aria-label={`Explore ${selectedService.title} on ProDyum IT`}
-        >
-          Explore service <span aria-hidden="true">↗</span>
-        </a>
-      </div>
-
-      <div className="services-flow-actions">
-        <button type="button" onClick={onPrevious}>Previous view</button>
-        <span>Choose any connected box</span>
-        <button type="button" onClick={onNext}>
-          Next view <i aria-hidden="true">↘</i>
-        </button>
-      </div>
-    </section>
+      </section>
+    </Html>
   );
 }
 
@@ -975,7 +943,16 @@ export default function OfficeTour() {
           <directionalLight position={[-8, 5, -12]} intensity={0.42} color="#87a0b4" />
           <Suspense fallback={null}>
             <OfficeModel />
-            <Hotspots active={activeStop} onSelect={goToStop} />
+            <Hotspots
+              active={activeStop}
+              onSelect={goToStop}
+              hiddenIndex={showServicesFlow ? 1 : null}
+            />
+            <SceneServicesMap
+              visible={showServicesFlow}
+              selectedIndex={selectedServiceIndex}
+              onSelect={setSelectedServiceIndex}
+            />
           </Suspense>
           <CameraRig
             progressRef={progressRef}
@@ -1042,16 +1019,8 @@ export default function OfficeTour() {
         </ol>
       </nav>
 
-      {activeFrame > 0 ? (
-        showServicesFlow ? (
-          <ServicesFlow
-            selectedIndex={selectedServiceIndex}
-            onSelect={setSelectedServiceIndex}
-            onPrevious={() => goToFrame(Math.max(activeFrame - 1, 0))}
-            onNext={() => goToFrame(Math.min(activeFrame + 1, TOUR_FRAMES.length - 1))}
-          />
-        ) : (
-          <section className={`story-card${stop ? "" : " is-overview"}${isNavigating ? " is-travelling" : ""}`} aria-live="polite" aria-atomic="true">
+      {activeFrame > 0 && !showServicesFlow ? (
+        <section className={`story-card${stop ? "" : " is-overview"}${isNavigating ? " is-travelling" : ""}`} aria-live="polite" aria-atomic="true">
           <div className="story-meta">
             <span>{presentedStory.meta}</span>
             <span>{presentedStory.eyebrow}</span>
@@ -1087,8 +1056,19 @@ export default function OfficeTour() {
               Next view <span aria-hidden="true">↘</span>
             </button>
           </div>
-          </section>
-        )
+        </section>
+      ) : null}
+
+      {showServicesFlow ? (
+        <div className="point-two-controls" aria-label="Point 2 navigation">
+          <button type="button" onClick={() => goToFrame(Math.max(activeFrame - 1, 0))}>
+            Previous view
+          </button>
+          <span>Point 02 · Services</span>
+          <button type="button" onClick={() => goToFrame(Math.min(activeFrame + 1, TOUR_FRAMES.length - 1))}>
+            Next view <i aria-hidden="true">↘</i>
+          </button>
+        </div>
       ) : null}
 
       <div className={`scroll-cue${activeFrame > 0 ? " is-hidden" : ""}`} aria-hidden="true">
