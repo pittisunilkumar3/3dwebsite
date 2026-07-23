@@ -98,208 +98,6 @@ a:focus-visible {
   mix-blend-mode: screen;
 }
 
-.tour-header {
-  position: fixed;
-  z-index: 60;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 80px;
-  padding: 16px 32px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  pointer-events: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.055);
-  background: linear-gradient(180deg, rgba(5, 9, 13, 0.9), rgba(5, 9, 13, 0.44));
-  backdrop-filter: blur(12px);
-}
-
-.brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 14px;
-  color: var(--paper);
-  text-decoration: none;
-  pointer-events: auto;
-}
-
-.brand > span {
-  width: 38px;
-  height: 38px;
-  display: grid;
-  place-items: center;
-  border: 1px solid rgba(244, 181, 104, 0.58);
-  border-radius: 50%;
-  color: var(--amber-bright);
-  font: 500 11px/1 var(--font-geist-mono), monospace;
-  letter-spacing: 0.12em;
-}
-
-.brand div {
-  display: grid;
-  gap: 3px;
-}
-
-.brand strong {
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.19em;
-  text-transform: uppercase;
-}
-
-.brand small,
-.tour-status {
-  color: var(--muted);
-  font-size: 9px;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-}
-
-.brand > span.prodyum-mark {
-  position: relative;
-  width: 42px;
-  height: 42px;
-  border: 0;
-  border-radius: 11px;
-  background: linear-gradient(135deg, var(--prodyum-blue), var(--prodyum-green));
-  box-shadow: 0 10px 34px rgba(20, 158, 231, 0.2);
-}
-
-.prodyum-mark::before {
-  content: "";
-  position: absolute;
-  top: 11px;
-  left: 11px;
-  width: 20px;
-  height: 13px;
-  border: 2px solid white;
-  border-radius: 2px;
-}
-
-.prodyum-mark::after {
-  content: "";
-  position: absolute;
-  left: 17px;
-  bottom: 9px;
-  width: 9px;
-  height: 2px;
-  border-radius: 2px;
-  background: white;
-  box-shadow: 4px -4px 0 -0.5px white;
-}
-
-.brand strong.prodyum-wordmark {
-  display: flex;
-  align-items: baseline;
-  gap: 2px;
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  text-transform: none;
-}
-
-.prodyum-wordmark > span {
-  color: #fff;
-}
-
-.prodyum-wordmark em {
-  background: linear-gradient(90deg, var(--prodyum-blue), var(--prodyum-green));
-  background-clip: text;
-  color: transparent;
-  font-style: normal;
-}
-
-.prodyum-brand small {
-  letter-spacing: 0.08em;
-  text-transform: none;
-}
-
-.landing-navigation {
-  position: absolute;
-  left: 50%;
-  display: flex;
-  align-items: center;
-  gap: clamp(22px, 2.5vw, 39px);
-  transform: translateX(-50%);
-  pointer-events: auto;
-  transition: opacity 240ms ease, visibility 240ms ease;
-}
-
-.landing-navigation a {
-  position: relative;
-  padding: 9px 0;
-  color: rgba(255, 255, 255, 0.72);
-  font-size: 13px;
-  font-weight: 500;
-  text-decoration: none;
-  transition: color 180ms ease;
-}
-
-.landing-navigation a::after {
-  content: "";
-  position: absolute;
-  right: 0;
-  bottom: 2px;
-  left: 0;
-  height: 1px;
-  background: linear-gradient(90deg, var(--prodyum-blue), var(--prodyum-green));
-  transform: scaleX(0);
-  transform-origin: center;
-  transition: transform 180ms ease;
-}
-
-.landing-navigation a:hover,
-.landing-navigation a:first-child {
-  color: #fff;
-}
-
-.landing-navigation a:hover::after,
-.landing-navigation a:first-child::after {
-  transform: scaleX(1);
-}
-
-.landing-get-started {
-  position: absolute;
-  right: 32px;
-  min-width: 116px;
-  min-height: 42px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 6px;
-  background: linear-gradient(110deg, var(--prodyum-blue), var(--prodyum-green));
-  box-shadow: 0 10px 30px rgba(20, 158, 231, 0.16);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 650;
-  text-decoration: none;
-  pointer-events: auto;
-  transition: transform 200ms ease, box-shadow 200ms ease, opacity 240ms ease, visibility 240ms ease;
-}
-
-.landing-get-started:hover {
-  box-shadow: 0 12px 34px rgba(53, 200, 108, 0.22);
-  transform: translateY(-2px);
-}
-
-.tour-status {
-  position: absolute;
-  right: 32px;
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  transition: opacity 240ms ease, visibility 240ms ease;
-}
-
-.office-tour.is-landing .tour-status,
-.office-tour:not(.is-landing) .landing-navigation,
-.office-tour:not(.is-landing) .landing-get-started {
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-}
-
 .landing-hero {
   position: fixed;
   z-index: 57;
@@ -307,7 +105,7 @@ a:focus-visible {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 112px clamp(28px, 5vw, 84px) 62px;
+  padding: 44px clamp(48px, 6vw, 96px) 46px;
   opacity: 1;
   visibility: visible;
   transition: opacity 340ms ease, visibility 340ms ease;
@@ -329,7 +127,7 @@ a:focus-visible {
 .landing-hero::after {
   content: "";
   position: absolute;
-  inset: 80px 0 0;
+  inset: 0;
   opacity: 0.23;
   background-image: radial-gradient(circle, rgba(255, 255, 255, 0.32) 0.75px, transparent 0.9px);
   background-size: 25px 25px;
@@ -347,15 +145,15 @@ a:focus-visible {
 .landing-copy {
   position: relative;
   z-index: 2;
-  width: min(940px, calc(100vw - 80px));
+  width: min(1180px, calc(100vw - clamp(72px, 12vw, 160px)));
   text-align: center;
   pointer-events: auto;
-  transform: translateY(-2px);
+  transform: translateY(-24px);
   transition: transform 560ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .landing-hero.is-hidden .landing-copy {
-  transform: translateY(-28px);
+  transform: translateY(-48px);
 }
 
 .landing-badge {
@@ -387,16 +185,20 @@ a:focus-visible {
   margin: clamp(22px, 3vh, 30px) 0 0;
   color: #fff;
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(54px, 5.75vw, 78px);
+  font-size: clamp(52px, 5vw, 70px);
   font-weight: 600;
   letter-spacing: -0.045em;
-  line-height: 0.91;
+  line-height: 0.96;
   text-wrap: balance;
 }
 
 .landing-copy h1 > span,
 .landing-copy h1 > strong {
   display: block;
+}
+
+.landing-copy h1 > span:first-child {
+  white-space: nowrap;
 }
 
 .landing-copy h1 > strong {
@@ -483,14 +285,6 @@ a:focus-visible {
 .chapter-count,
 .model-credit {
   transition: opacity 320ms ease;
-}
-
-.status-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--amber-bright);
-  box-shadow: 0 0 16px rgba(244, 181, 104, 0.8);
 }
 
 .tour-rail {
@@ -993,13 +787,13 @@ a:focus-visible {
 
 @media (min-width: 901px) and (max-height: 760px) {
   .landing-hero {
-    padding-top: 96px;
-    padding-bottom: 34px;
+    padding-top: 34px;
+    padding-bottom: 30px;
   }
 
   .landing-copy h1 {
     margin-top: 18px;
-    font-size: clamp(48px, 4.9vw, 68px);
+    font-size: clamp(48px, 4.9vw, 64px);
   }
 
   .landing-description {
@@ -1013,30 +807,12 @@ a:focus-visible {
 }
 
 @media (max-width: 900px) {
-  .tour-header {
-    height: 74px;
-    padding: 20px 22px;
-  }
-
-  .landing-navigation {
-    display: none;
-  }
-
-  .landing-get-started {
-    right: 22px;
-    min-width: 104px;
-    min-height: 38px;
-    font-size: 12px;
-  }
-
-  .tour-status,
-  .brand small,
   .model-credit {
     display: none;
   }
 
   .landing-hero {
-    padding: 92px 22px 62px;
+    padding: 52px 28px 54px;
     align-items: center;
     justify-content: center;
   }
@@ -1050,15 +826,20 @@ a:focus-visible {
   }
 
   .landing-hero::after {
-    inset: 74px 0 0;
+    inset: 0;
   }
 
   .landing-copy {
     width: min(650px, 100%);
+    transform: translateY(-8px);
   }
 
   .landing-copy h1 {
     font-size: clamp(46px, 8.7vw, 68px);
+  }
+
+  .landing-copy h1 > span:first-child {
+    white-space: normal;
   }
 
   .landing-description {
@@ -1169,16 +950,12 @@ a:focus-visible {
 }
 
 @media (max-width: 560px) {
-  .brand strong {
-    font-size: 10px;
-  }
-
   .landing-hero {
-    padding: 82px 16px 50px;
+    padding: 38px 16px 44px;
   }
 
   .landing-hero::after {
-    inset: 68px 0 0;
+    inset: 0;
   }
 
   .landing-badge {
@@ -1221,10 +998,6 @@ a:focus-visible {
 
   .landing-secondary {
     padding: 0 18px;
-  }
-
-  .landing-get-started {
-    display: none;
   }
 
   .scroll-cue {

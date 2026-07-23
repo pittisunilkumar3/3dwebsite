@@ -838,8 +838,7 @@ export default function OfficeTour() {
             Digital Solutions Partner
           </p>
           <h1 id="landing-title">
-            <span>Helping Businesses Grow</span>
-            <span>Through</span>
+            <span>Helping Businesses Grow Through</span>
             <strong>Digital Marketing &amp;</strong>
             <strong>Technology</strong>
           </h1>
@@ -856,40 +855,6 @@ export default function OfficeTour() {
           </div>
         </div>
       </section>
-
-      <header className="tour-header">
-        <a
-          className="brand prodyum-brand"
-          href="#tour-start"
-          onClick={(event) => {
-            event.preventDefault();
-            goToFrame(0);
-          }}
-        >
-          <span className="prodyum-mark" aria-hidden="true" />
-          <div>
-            <strong className="prodyum-wordmark">
-              <span>ProDyum</span><em>IT</em>
-            </strong>
-            <small>Pvt Ltd · Interactive 3D office</small>
-          </div>
-        </a>
-        <nav className="landing-navigation" aria-label="ProDyum IT website">
-          <a href="https://prodyum.in/it">Home</a>
-          <a href="https://prodyum.in/it/services">Services</a>
-          <a href="https://prodyum.in/it/portfolio">Portfolio</a>
-          <a href="https://prodyum.in/it/about">About</a>
-          <a href="https://prodyum.in/it/careers">Careers</a>
-          <a href="https://prodyum.in/it/contact">Contact</a>
-        </nav>
-        <a className="landing-get-started" href="https://prodyum.in/it/contact">
-          Get Started
-        </a>
-        <div className="tour-status">
-          <span className="status-dot" />
-          Real-time 3D
-        </div>
-      </header>
 
       <nav className="tour-rail" aria-label="Office tour stops">
         <div
