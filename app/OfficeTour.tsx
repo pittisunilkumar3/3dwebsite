@@ -833,26 +833,25 @@ export default function OfficeTour() {
 
       <section className={`landing-hero${isLanding ? "" : " is-hidden"}`} aria-labelledby="landing-title">
         <div className="landing-copy">
-          <p className="landing-overline">
-            <span>ProDyum IT Pvt Ltd</span>
-            <i aria-hidden="true" />
-            <span>Digital growth partner</span>
+          <p className="landing-badge">
+            <span aria-hidden="true">ϟ</span>
+            Digital Solutions Partner
           </p>
           <h1 id="landing-title">
-            <span className="landing-title-intro">Helping Businesses Grow Through</span>
-            <strong className="landing-word">Digital</strong>
-            <strong className="landing-word">Marketing</strong>
-            <strong className="landing-technology"><em>&amp;</em> Technology</strong>
+            <span>Helping Businesses Grow</span>
+            <span>Through</span>
+            <strong>Digital Marketing &amp;</strong>
+            <strong>Technology</strong>
           </h1>
           <p className="landing-description">
             ProDyum IT Pvt Ltd delivers professional Digital Marketing, Branding, Web Development, and Multimedia Solutions that help businesses build a strong digital presence and grow online.
           </p>
           <div className="landing-actions">
             <a className="landing-primary" href="https://prodyum.in/it/services">
-              <span>Our Services</span><i aria-hidden="true">↗</i>
+              <span>Our Services</span><i aria-hidden="true">→</i>
             </a>
             <a className="landing-secondary" href="https://prodyum.in/it/contact">
-              <span>Contact Us</span><i aria-hidden="true">↗</i>
+              <span>Contact Us</span>
             </a>
           </div>
         </div>
@@ -874,6 +873,17 @@ export default function OfficeTour() {
             </strong>
             <small>Pvt Ltd · Interactive 3D office</small>
           </div>
+        </a>
+        <nav className="landing-navigation" aria-label="ProDyum IT website">
+          <a href="https://prodyum.in/it">Home</a>
+          <a href="https://prodyum.in/it/services">Services</a>
+          <a href="https://prodyum.in/it/portfolio">Portfolio</a>
+          <a href="https://prodyum.in/it/about">About</a>
+          <a href="https://prodyum.in/it/careers">Careers</a>
+          <a href="https://prodyum.in/it/contact">Contact</a>
+        </nav>
+        <a className="landing-get-started" href="https://prodyum.in/it/contact">
+          Get Started
         </a>
         <div className="tour-status">
           <span className="status-dot" />
