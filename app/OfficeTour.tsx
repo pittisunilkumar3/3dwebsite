@@ -1,6 +1,14 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { Canvas, useFrame, useLoader } from "@react-three/fiber";
 import { useProgress } from "@react-three/drei/core/Progress.js";
 import { Html } from "@react-three/drei/web/Html.js";
@@ -51,8 +59,17 @@ type CameraFlight = {
 type ServiceBranch = {
   code: string;
   title: string;
-  summary: string;
+  color: string;
   items: string[];
+};
+
+type ServiceItem = {
+  code: string;
+  title: string;
+  category: string;
+  color: string;
+  side: "left" | "right";
+  row: number;
 };
 
 const VIEWING_DISTANCE = 4;
@@ -312,7 +329,7 @@ const SERVICE_BRANCHES: ServiceBranch[] = [
   {
     code: "01",
     title: "Digital Marketing",
-    summary: "Increase visibility and reach the right audience with measurable campaigns.",
+    color: "#35c86c",
     items: [
       "Social Media Management",
       "Meta Ads & Google Ads",
@@ -324,7 +341,7 @@ const SERVICE_BRANCHES: ServiceBranch[] = [
   {
     code: "02",
     title: "Branding & Design",
-    summary: "Build a distinctive brand identity and clear visual communication.",
+    color: "#149ee7",
     items: [
       "Logo Design",
       "Brand Identity Design",
@@ -336,7 +353,7 @@ const SERVICE_BRANCHES: ServiceBranch[] = [
   {
     code: "03",
     title: "Web Development",
-    summary: "Launch modern, responsive websites designed around business outcomes.",
+    color: "#f4b568",
     items: [
       "Business Websites",
       "Corporate Websites",
@@ -347,7 +364,7 @@ const SERVICE_BRANCHES: ServiceBranch[] = [
   {
     code: "04",
     title: "Video & Multimedia",
-    summary: "Create professional visual content that captures and converts attention.",
+    color: "#c58aff",
     items: [
       "Product Shoots",
       "Promotional Videos",
@@ -356,6 +373,37 @@ const SERVICE_BRANCHES: ServiceBranch[] = [
     ],
   },
 ];
+
+const serviceSideRows = { left: 0, right: 0 };
+const INDIVIDUAL_SERVICES: ServiceItem[] = SERVICE_BRANCHES.flatMap(
+  (branch, branchIndex) =>
+    branch.items.map((title, itemIndex) => {
+      const side: ServiceItem["side"] =
+        (itemIndex + branchIndex) % 2 === 0 ? "left" : "right";
+      const row = serviceSideRows[side];
+      serviceSideRows[side] += 1;
+
+      return {
+        code: String(
+          SERVICE_BRANCHES
+            .slice(0, branchIndex)
+            .reduce((total, item) => total + item.items.length, 0) +
+            itemIndex +
+            1,
+        ).padStart(2, "0"),
+        title,
+        category: branch.title,
+        color: branch.color,
+        side,
+        row,
+      };
+    }),
+);
+
+const SERVICE_MAP_HUB_Y = 198;
+const SERVICE_MAP_ROW_HEIGHT = 36;
+const SERVICE_MAP_ROW_STEP = 45;
+const SERVICE_MAP_DIAGONAL_X = 110.5;
 
 // The landing overview is composed slightly to the right so the office remains
 // visible beside the editorial hero panel instead of sitting behind the copy.
@@ -714,47 +762,57 @@ function SceneServicesMap({
     <Html
       position={[12.9, 0.84, -15.95]}
       center
-      distanceFactor={3.4}
+      distanceFactor={3}
       zIndexRange={[70, 45]}
     >
       <section className="scene-services-flow" aria-label="Point 2 interactive services">
         <div className="services-map">
-          <span className="service-wire service-wire--left-top" aria-hidden="true" />
-          <span className="service-wire service-wire--left-bottom" aria-hidden="true" />
-          <span className="service-wire service-wire--right-top" aria-hidden="true" />
-          <span className="service-wire service-wire--right-bottom" aria-hidden="true" />
-
           <div className="service-hub" aria-hidden="true">
-            <span>Point</span>
-            <strong>02</strong>
-            <small>Services</small>
+            <span>02</span>
           </div>
 
-          {SERVICE_BRANCHES.map((service, index) => {
-            const position = [
-              "left-top",
-              "left-bottom",
-              "right-top",
-              "right-bottom",
-            ][index];
+          {INDIVIDUAL_SERVICES.map((service, index) => {
             const isSelected = selectedIndex === index;
+            const serviceY =
+              SERVICE_MAP_ROW_HEIGHT / 2 + service.row * SERVICE_MAP_ROW_STEP;
+            const deltaY = SERVICE_MAP_HUB_Y - serviceY;
+            const connectorLength = Math.hypot(
+              SERVICE_MAP_DIAGONAL_X,
+              deltaY,
+            );
+            const connectorAngle =
+              (Math.atan2(
+                deltaY,
+                service.side === "left"
+                  ? SERVICE_MAP_DIAGONAL_X
+                  : -SERVICE_MAP_DIAGONAL_X,
+              ) *
+                180) /
+              Math.PI;
+            const serviceStyle = {
+              "--service-row": service.row,
+              "--service-color": service.color,
+              "--connector-length": `${connectorLength}px`,
+              "--connector-angle": `${connectorAngle}deg`,
+            } as CSSProperties;
 
             return (
               <button
                 key={service.title}
                 type="button"
-                className={`service-node service-node--${position}${isSelected ? " is-selected" : ""}`}
+                className={`service-node service-node--${service.side}${isSelected ? " is-selected" : ""}`}
+                style={serviceStyle}
                 onClick={() => onSelect(index)}
                 aria-pressed={isSelected}
+                aria-label={`${service.title}, ${service.category}`}
               >
+                <span className="service-connector" aria-hidden="true" />
                 <span className="service-node-number">{service.code}</span>
                 <span className="service-node-copy">
                   <strong>{service.title}</strong>
-                  <small>
-                    {isSelected ? service.items.join(" · ") : service.summary}
-                  </small>
+                  <small>{service.category}</small>
                 </span>
-                <i aria-hidden="true">{isSelected ? "×" : "+"}</i>
+                <i aria-hidden="true">{isSelected ? "✓" : "↗"}</i>
               </button>
             );
           })}

@@ -77,11 +77,17 @@ test("keeps the authored camera and model rules in place", async () => {
   assert.match(tour, /className="scene-services-flow"/);
   assert.match(tour, /position=\{\[12\.9, 0\.84, -15\.95\]\}/);
   assert.match(tour, /aria-pressed=\{isSelected\}/);
+  assert.match(tour, /INDIVIDUAL_SERVICES\.map/);
+  assert.match(tour, /className="service-connector"/);
+  assert.match(tour, /const SERVICE_MAP_HUB_Y = 198;/);
   assert.match(tour, /hiddenIndex=\{showServicesFlow \? 1 : null\}/);
   assert.match(tour, /Social Media Management/);
+  assert.match(tour, /Content Strategy/);
   assert.match(tour, /Brand Identity Design/);
+  assert.match(tour, /UI\/UX Design/);
   assert.match(tour, /E-commerce Websites/);
   assert.match(tour, /Promotional Videos/);
+  assert.match(tour, /Video Editing/);
   assert.match(tour, /const showServicesFlow = activeStop === 1 && !isNavigating/);
   assert.match(tour, /className={`landing-hero\$\{isLanding \? "" : " is-hidden"\}`}/);
   assert.match(tour, /setIsLanding\(window\.scrollY <= 8\)/);
