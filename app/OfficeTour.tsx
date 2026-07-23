@@ -79,9 +79,6 @@ type ServiceItem = {
 };
 
 const VIEWING_DISTANCE = 4;
-const SERVICES_FRAME_INDEX = 3;
-const SERVICES_SCROLL_ALIGNMENT_EPSILON = 0.035;
-const SERVICES_REVEAL_DELAY_MS = 1200;
 
 function getTourViewPosition(stop: TourStop, result = new THREE.Vector3()) {
   const target = new THREE.Vector3(...stop.target);
@@ -889,83 +886,89 @@ function SceneServicesMap({
   if (!visible) return null;
 
   return (
-    <section
-      className="scene-services-flow"
-      aria-labelledby="services-map-title"
-      onWheel={handleServicesWheel}
-      onTouchStart={handleServicesTouchStart}
-      onTouchMove={handleServicesTouchMove}
-      onTouchEnd={() => {
-        touchStartYRef.current = null;
-      }}
+    <Html
+      position={[12.9, 0.84, -15.95]}
+      fullscreen
+      zIndexRange={[70, 45]}
     >
-      <header className="services-map-heading">
-        <span>Point 02 · Digital solutions</span>
-        <h1 id="services-map-title">Our Services</h1>
-        <p>Explore every service and continue scrolling to resume the office tour.</p>
-      </header>
+      <section
+        className="scene-services-flow"
+        aria-labelledby="services-map-title"
+        onWheel={handleServicesWheel}
+        onTouchStart={handleServicesTouchStart}
+        onTouchMove={handleServicesTouchMove}
+        onTouchEnd={() => {
+          touchStartYRef.current = null;
+        }}
+      >
+        <header className="services-map-heading">
+          <span>Point 02 · Digital solutions</span>
+          <h1 id="services-map-title">Our Services</h1>
+          <p>Explore every service and continue scrolling to resume the office tour.</p>
+        </header>
 
-      <div className="services-map">
-        <div className="service-hub" aria-hidden="true">
-          <span>02</span>
+        <div className="services-map">
+          <div className="service-hub" aria-hidden="true">
+            <span>02</span>
+          </div>
+
+          {INDIVIDUAL_SERVICES.map((service, index) => {
+            const isSelected = selectedIndex === index;
+            const serviceY =
+              SERVICE_MAP_ROW_HEIGHT / 2 + service.row * SERVICE_MAP_ROW_STEP;
+            const deltaY = SERVICE_MAP_HUB_Y - serviceY;
+            const connectorLength = Math.hypot(
+              SERVICE_MAP_DIAGONAL_X,
+              deltaY,
+            );
+            const connectorAngle =
+              (Math.atan2(
+                deltaY,
+                service.side === "left"
+                  ? SERVICE_MAP_DIAGONAL_X
+                  : -SERVICE_MAP_DIAGONAL_X,
+              ) *
+                180) /
+              Math.PI;
+            const serviceStyle = {
+              "--service-row": service.row,
+              "--service-color": service.color,
+              "--connector-length": `${connectorLength}px`,
+              "--connector-angle": `${connectorAngle}deg`,
+            } as CSSProperties;
+
+            return (
+              <button
+                key={service.title}
+                type="button"
+                className={`service-node service-node--${service.side}${isSelected ? " is-selected" : ""}`}
+                style={serviceStyle}
+                onClick={() => onSelect(index)}
+                aria-pressed={isSelected}
+                aria-label={`${service.title}, ${service.category}`}
+              >
+                <span className="service-connector" aria-hidden="true" />
+                <span className="service-node-number">{service.code}</span>
+                <span className="service-node-copy">
+                  <strong>{service.title}</strong>
+                  <small>{service.category}</small>
+                  <p>{service.description}</p>
+                </span>
+                <i aria-hidden="true">{isSelected ? "✓" : "↗"}</i>
+              </button>
+            );
+          })}
         </div>
 
-        {INDIVIDUAL_SERVICES.map((service, index) => {
-          const isSelected = selectedIndex === index;
-          const serviceY =
-            SERVICE_MAP_ROW_HEIGHT / 2 + service.row * SERVICE_MAP_ROW_STEP;
-          const deltaY = SERVICE_MAP_HUB_Y - serviceY;
-          const connectorLength = Math.hypot(
-            SERVICE_MAP_DIAGONAL_X,
-            deltaY,
-          );
-          const connectorAngle =
-            (Math.atan2(
-              deltaY,
-              service.side === "left"
-                ? SERVICE_MAP_DIAGONAL_X
-                : -SERVICE_MAP_DIAGONAL_X,
-            ) *
-              180) /
-            Math.PI;
-          const serviceStyle = {
-            "--service-row": service.row,
-            "--service-color": service.color,
-            "--connector-length": `${connectorLength}px`,
-            "--connector-angle": `${connectorAngle}deg`,
-          } as CSSProperties;
-
-          return (
-            <button
-              key={service.title}
-              type="button"
-              className={`service-node service-node--${service.side}${isSelected ? " is-selected" : ""}`}
-              style={serviceStyle}
-              onClick={() => onSelect(index)}
-              aria-pressed={isSelected}
-              aria-label={`${service.title}, ${service.category}`}
-            >
-              <span className="service-connector" aria-hidden="true" />
-              <span className="service-node-number">{service.code}</span>
-              <span className="service-node-copy">
-                <strong>{service.title}</strong>
-                <small>{service.category}</small>
-                <p>{service.description}</p>
-              </span>
-              <i aria-hidden="true">{isSelected ? "✓" : "↗"}</i>
-            </button>
-          );
-        })}
-      </div>
-
-      <button
-        type="button"
-        className="services-mobile-continue"
-        onClick={onNext}
-      >
-        Continue office tour <span aria-hidden="true">↓</span>
-      </button>
-    </section>
+        <button
+          type="button"
+          className="services-mobile-continue"
+          onClick={onNext}
+        >
+          Continue office tour <span aria-hidden="true">↓</span>
+        </button>
+      </section>
+    </Html>
   );
 }
 
@@ -1001,8 +1004,6 @@ export default function OfficeTour() {
   const navigationIdRef = useRef(0);
   const activeFrameRef = useRef(0);
   const [activeFrame, setActiveFrame] = useState(0);
-  const [isServiceScrollAligned, setIsServiceScrollAligned] = useState(false);
-  const [isServicePointReady, setIsServicePointReady] = useState(false);
   const [isLanding, setIsLanding] = useState(true);
   const [isNavigating, setIsNavigating] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -1022,17 +1023,9 @@ export default function OfficeTour() {
       const nextProgress = THREE.MathUtils.clamp(window.scrollY / maxScroll, 0, 1);
       setIsLanding(window.scrollY <= 8);
       progressRef.current = nextProgress;
-      const scaledProgress = nextProgress * (TOUR_FRAMES.length - 1);
-      const serviceScrollAligned =
-        Math.abs(scaledProgress - SERVICES_FRAME_INDEX) <=
-        SERVICES_SCROLL_ALIGNMENT_EPSILON;
-      setIsServiceScrollAligned(serviceScrollAligned);
-      if (!serviceScrollAligned) {
-        setIsServicePointReady(false);
-      }
       const nextActiveFrame = Math.min(
         TOUR_FRAMES.length - 1,
-        Math.round(scaledProgress),
+        Math.round(nextProgress * (TOUR_FRAMES.length - 1)),
       );
       if (nextActiveFrame !== activeFrameRef.current) {
         activeFrameRef.current = nextActiveFrame;
@@ -1049,22 +1042,6 @@ export default function OfficeTour() {
     };
   }, []);
 
-  useEffect(() => {
-    if (
-      isNavigating ||
-      activeFrame !== SERVICES_FRAME_INDEX ||
-      !isServiceScrollAligned
-    ) {
-      return;
-    }
-
-    const revealTimeout = window.setTimeout(() => {
-      setIsServicePointReady(true);
-    }, SERVICES_REVEAL_DELAY_MS);
-
-    return () => window.clearTimeout(revealTimeout);
-  }, [activeFrame, isNavigating, isServiceScrollAligned]);
-
   const goToFrame = useCallback(
     (frameIndex: number) => {
       const nextFrame = THREE.MathUtils.clamp(
@@ -1072,13 +1049,8 @@ export default function OfficeTour() {
         0,
         TOUR_FRAMES.length - 1,
       );
-      const isScrollAligned =
-        Math.abs(
-          progressRef.current * (TOUR_FRAMES.length - 1) - nextFrame,
-        ) <= SERVICES_SCROLL_ALIGNMENT_EPSILON;
       if (
         nextFrame === activeFrameRef.current &&
-        isScrollAligned &&
         navigationRequestRef.current === null
       ) {
         setIsNavigating(false);
@@ -1088,7 +1060,6 @@ export default function OfficeTour() {
       const nextProgress = nextFrame / (TOUR_FRAMES.length - 1);
 
       setIsNavigating(true);
-      setIsServicePointReady(false);
       navigationIdRef.current += 1;
       navigationRequestRef.current = {
         id: navigationIdRef.current,
@@ -1108,9 +1079,6 @@ export default function OfficeTour() {
 
   const handleNavigationSettled = useCallback(() => {
     setIsNavigating(false);
-    setIsServicePointReady(
-      activeFrameRef.current === SERVICES_FRAME_INDEX,
-    );
   }, []);
 
   const goToStop = useCallback(
@@ -1165,10 +1133,7 @@ export default function OfficeTour() {
           actionHref: null,
         }
       : story;
-  const showServicesFlow =
-    activeStop === 1 &&
-    isServicePointReady &&
-    !isNavigating;
+  const showServicesFlow = activeStop === 1 && !isNavigating;
 
   return (
     <main className={`office-tour${isLanding ? " is-landing" : ""}${showServicesFlow ? " is-services" : ""}`}>
@@ -1189,6 +1154,13 @@ export default function OfficeTour() {
             {!showServicesFlow ? (
               <Hotspots active={activeStop} onSelect={goToStop} />
             ) : null}
+            <SceneServicesMap
+              visible={showServicesFlow}
+              selectedIndex={selectedServiceIndex}
+              onSelect={setSelectedServiceIndex}
+              onPrevious={() => goToFrame(Math.max(activeFrame - 1, 0))}
+              onNext={() => goToFrame(Math.min(activeFrame + 1, TOUR_FRAMES.length - 1))}
+            />
           </Suspense>
           <CameraRig
             progressRef={progressRef}
@@ -1202,14 +1174,6 @@ export default function OfficeTour() {
       </div>
 
       <LoadingScreen />
-
-      <SceneServicesMap
-        visible={showServicesFlow}
-        selectedIndex={selectedServiceIndex}
-        onSelect={setSelectedServiceIndex}
-        onPrevious={() => goToFrame(Math.max(activeFrame - 1, 0))}
-        onNext={() => goToFrame(Math.min(activeFrame + 1, TOUR_FRAMES.length - 1))}
-      />
 
       <section className={`landing-hero${isLanding ? "" : " is-hidden"}`} aria-labelledby="landing-title">
         <div className="landing-copy">

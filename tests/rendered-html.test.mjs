@@ -69,10 +69,6 @@ test("keeps the authored camera and model rules in place", async () => {
   assert.match(tour, /type NavigationRequest/);
   assert.match(tour, /CameraRig owns the[\s\S]*?intermediate stops never activate/);
   assert.match(tour, /window\.scrollTo\(\{ top: nextProgress \* maxScroll, behavior: "auto" \}\)/);
-  assert.match(tour, /const SERVICES_FRAME_INDEX = 3;/);
-  assert.match(tour, /const SERVICES_REVEAL_DELAY_MS = 1200;/);
-  assert.match(tour, /Math\.abs\(scaledProgress - SERVICES_FRAME_INDEX\)/);
-  assert.match(tour, /setIsServicePointReady\(true\)/);
   assert.match(tour, /contentTitle: "Digital Solutions Partner"/);
   assert.match(tour, /contentTitle: "Web Development"/);
   assert.match(tour, /contentTitle: "Free Consultation"/);
@@ -80,8 +76,7 @@ test("keeps the authored camera and model rules in place", async () => {
   assert.doesNotMatch(tour, /className="tour-header"/);
   assert.match(tour, /className="story-cta"/);
   assert.match(tour, /className="scene-services-flow"/);
-  assert.doesNotMatch(tour, /position=\{\[12\.9, 0\.84, -15\.95\]\}[\s\S]*?fullscreen/);
-  assert.match(tour, /<LoadingScreen \/>[\s\S]*?<SceneServicesMap/);
+  assert.match(tour, /position=\{\[12\.9, 0\.84, -15\.95\]\}[\s\S]*?fullscreen/);
   assert.match(tour, /id="services-map-title">Our Services/);
   assert.match(tour, /handleServicesWheel/);
   assert.match(tour, /handleServicesTouchMove/);
@@ -101,7 +96,7 @@ test("keeps the authored camera and model rules in place", async () => {
   assert.match(tour, /E-commerce Websites/);
   assert.match(tour, /Promotional Videos/);
   assert.match(tour, /Video Editing/);
-  assert.match(tour, /const showServicesFlow =[\s\S]*?activeStop === 1 &&[\s\S]*?isServicePointReady &&[\s\S]*?!isNavigating/);
+  assert.match(tour, /const showServicesFlow = activeStop === 1 && !isNavigating/);
   assert.match(tour, /className={`landing-hero\$\{isLanding \? "" : " is-hidden"\}`}/);
   assert.match(tour, /setIsLanding\(window\.scrollY <= 8\)/);
   assert.match(tour, /Digital Solutions Partner/);
@@ -114,8 +109,6 @@ test("keeps the authored camera and model rules in place", async () => {
   assert.match(tour, /title: "Water dispenser"/);
   assert.match(tour, /title: "Evidence box"/);
   assert.match(layout, /socialImage = `\$\{protocol\}:\/\/\$\{host\}\/og\.png`/);
-  assert.match(styles, /\.scene-services-flow \{[\s\S]*?position: fixed;/);
-  assert.match(styles, /height: 100dvh;/);
   assert.match(styles, /overscroll-behavior-y: auto/);
   assert.doesNotMatch(styles, /overscroll-behavior: contain/);
 });
