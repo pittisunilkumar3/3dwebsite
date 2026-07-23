@@ -60,12 +60,16 @@ type ServiceBranch = {
   code: string;
   title: string;
   color: string;
-  items: string[];
+  items: {
+    title: string;
+    description: string;
+  }[];
 };
 
 type ServiceItem = {
   code: string;
   title: string;
+  description: string;
   category: string;
   color: string;
   side: "left" | "right";
@@ -331,11 +335,26 @@ const SERVICE_BRANCHES: ServiceBranch[] = [
     title: "Digital Marketing",
     color: "#35c86c",
     items: [
-      "Social Media Management",
-      "Meta Ads & Google Ads",
-      "Search Engine Optimization",
-      "YouTube Marketing",
-      "Content Strategy",
+      {
+        title: "Social Media Management",
+        description: "Plan, publish, and manage branded content and communities across major social platforms.",
+      },
+      {
+        title: "Meta Ads & Google Ads",
+        description: "Reach high-intent audiences with measurable paid campaigns across Meta and Google.",
+      },
+      {
+        title: "Search Engine Optimization",
+        description: "Improve organic visibility through keyword, on-page, technical, and authority optimisation.",
+      },
+      {
+        title: "YouTube Marketing",
+        description: "Grow reach through channel strategy, optimised videos, and audience-focused campaigns.",
+      },
+      {
+        title: "Content Strategy",
+        description: "Turn business goals into a consistent content plan across every important channel.",
+      },
     ],
   },
   {
@@ -343,11 +362,26 @@ const SERVICE_BRANCHES: ServiceBranch[] = [
     title: "Branding & Design",
     color: "#149ee7",
     items: [
-      "Logo Design",
-      "Brand Identity Design",
-      "Social Media Creatives",
-      "Marketing Graphics",
-      "UI/UX Design",
+      {
+        title: "Logo Design",
+        description: "Create a memorable and versatile logo that represents your business clearly.",
+      },
+      {
+        title: "Brand Identity Design",
+        description: "Build a complete visual system covering colour, typography, imagery, and usage.",
+      },
+      {
+        title: "Social Media Creatives",
+        description: "Produce branded posts, stories, carousels, and campaign-ready social graphics.",
+      },
+      {
+        title: "Marketing Graphics",
+        description: "Design brochures, banners, advertisements, and persuasive brand collateral.",
+      },
+      {
+        title: "UI/UX Design",
+        description: "Design intuitive websites and product experiences around real user needs.",
+      },
     ],
   },
   {
@@ -355,10 +389,22 @@ const SERVICE_BRANCHES: ServiceBranch[] = [
     title: "Web Development",
     color: "#f4b568",
     items: [
-      "Business Websites",
-      "Corporate Websites",
-      "Landing Pages",
-      "E-commerce Websites",
+      {
+        title: "Business Websites",
+        description: "Present your services with a fast, responsive website built to generate enquiries.",
+      },
+      {
+        title: "Corporate Websites",
+        description: "Create a credible and scalable company website for teams, stakeholders, and customers.",
+      },
+      {
+        title: "Landing Pages",
+        description: "Build focused campaign pages designed to turn traffic into qualified leads.",
+      },
+      {
+        title: "E-commerce Websites",
+        description: "Launch a secure online store with smooth product discovery and checkout.",
+      },
     ],
   },
   {
@@ -366,10 +412,22 @@ const SERVICE_BRANCHES: ServiceBranch[] = [
     title: "Video & Multimedia",
     color: "#c58aff",
     items: [
-      "Product Shoots",
-      "Promotional Videos",
-      "Social Media Videos",
-      "Video Editing",
+      {
+        title: "Product Shoots",
+        description: "Capture professional product photography and video for campaigns and catalogues.",
+      },
+      {
+        title: "Promotional Videos",
+        description: "Tell your brand story through polished videos built for awareness and conversion.",
+      },
+      {
+        title: "Social Media Videos",
+        description: "Create short-form reels and platform-ready videos that stop the scroll.",
+      },
+      {
+        title: "Video Editing",
+        description: "Transform raw footage with polished pacing, graphics, sound, and colour.",
+      },
     ],
   },
 ];
@@ -377,7 +435,7 @@ const SERVICE_BRANCHES: ServiceBranch[] = [
 const serviceSideRows = { left: 0, right: 0 };
 const INDIVIDUAL_SERVICES: ServiceItem[] = SERVICE_BRANCHES.flatMap(
   (branch, branchIndex) =>
-    branch.items.map((title, itemIndex) => {
+    branch.items.map((item, itemIndex) => {
       const side: ServiceItem["side"] =
         (itemIndex + branchIndex) % 2 === 0 ? "left" : "right";
       const row = serviceSideRows[side];
@@ -391,7 +449,8 @@ const INDIVIDUAL_SERVICES: ServiceItem[] = SERVICE_BRANCHES.flatMap(
             itemIndex +
             1,
         ).padStart(2, "0"),
-        title,
+        title: item.title,
+        description: item.description,
         category: branch.title,
         color: branch.color,
         side,
@@ -400,10 +459,10 @@ const INDIVIDUAL_SERVICES: ServiceItem[] = SERVICE_BRANCHES.flatMap(
     }),
 );
 
-const SERVICE_MAP_HUB_Y = 198;
-const SERVICE_MAP_ROW_HEIGHT = 36;
-const SERVICE_MAP_ROW_STEP = 45;
-const SERVICE_MAP_DIAGONAL_X = 110.5;
+const SERVICE_MAP_HUB_Y = 380;
+const SERVICE_MAP_ROW_HEIGHT = 70;
+const SERVICE_MAP_ROW_STEP = 82;
+const SERVICE_MAP_DIAGONAL_X = 118.5;
 
 // The landing overview is composed slightly to the right so the office remains
 // visible beside the editorial hero panel instead of sitting behind the copy.
@@ -710,17 +769,13 @@ function OfficeModel() {
 function Hotspots({
   active,
   onSelect,
-  hiddenIndex,
 }: {
   active: number | null;
   onSelect: (index: number) => void;
-  hiddenIndex?: number | null;
 }) {
   return (
     <group>
       {TOUR_STOPS.map((stop, index) => {
-        if (index === hiddenIndex) return null;
-
         const isActive = index === active;
         const isNear = active === null || Math.abs(index - active) <= 1;
         return (
@@ -761,8 +816,7 @@ function SceneServicesMap({
   return (
     <Html
       position={[12.9, 0.84, -15.95]}
-      center
-      distanceFactor={3}
+      fullscreen
       zIndexRange={[70, 45]}
     >
       <section className="scene-services-flow" aria-label="Point 2 interactive services">
@@ -811,6 +865,7 @@ function SceneServicesMap({
                 <span className="service-node-copy">
                   <strong>{service.title}</strong>
                   <small>{service.category}</small>
+                  <p>{service.description}</p>
                 </span>
                 <i aria-hidden="true">{isSelected ? "✓" : "↗"}</i>
               </button>
@@ -986,7 +1041,7 @@ export default function OfficeTour() {
   const showServicesFlow = activeStop === 1 && !isNavigating;
 
   return (
-    <main className={`office-tour${isLanding ? " is-landing" : ""}`}>
+    <main className={`office-tour${isLanding ? " is-landing" : ""}${showServicesFlow ? " is-services" : ""}`}>
       <div className="scene-stage" aria-label="Interactive three-dimensional office tour">
         <Canvas
           dpr={[1, 1.5]}
@@ -1001,11 +1056,9 @@ export default function OfficeTour() {
           <directionalLight position={[-8, 5, -12]} intensity={0.42} color="#87a0b4" />
           <Suspense fallback={null}>
             <OfficeModel />
-            <Hotspots
-              active={activeStop}
-              onSelect={goToStop}
-              hiddenIndex={showServicesFlow ? 1 : null}
-            />
+            {!showServicesFlow ? (
+              <Hotspots active={activeStop} onSelect={goToStop} />
+            ) : null}
             <SceneServicesMap
               visible={showServicesFlow}
               selectedIndex={selectedServiceIndex}

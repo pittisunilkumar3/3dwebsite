@@ -75,13 +75,14 @@ test("keeps the authored camera and model rules in place", async () => {
   assert.doesNotMatch(tour, /className="tour-header"/);
   assert.match(tour, /className="story-cta"/);
   assert.match(tour, /className="scene-services-flow"/);
-  assert.match(tour, /position=\{\[12\.9, 0\.84, -15\.95\]\}/);
+  assert.match(tour, /position=\{\[12\.9, 0\.84, -15\.95\]\}[\s\S]*?fullscreen/);
   assert.match(tour, /aria-pressed=\{isSelected\}/);
   assert.match(tour, /INDIVIDUAL_SERVICES\.map/);
   assert.match(tour, /className="service-connector"/);
-  assert.match(tour, /const SERVICE_MAP_HUB_Y = 198;/);
-  assert.match(tour, /hiddenIndex=\{showServicesFlow \? 1 : null\}/);
+  assert.match(tour, /const SERVICE_MAP_HUB_Y = 380;/);
+  assert.match(tour, /!showServicesFlow \? \([\s\S]*?<Hotspots active=\{activeStop\}/);
   assert.match(tour, /Social Media Management/);
+  assert.match(tour, /Plan, publish, and manage branded content/);
   assert.match(tour, /Content Strategy/);
   assert.match(tour, /Brand Identity Design/);
   assert.match(tour, /UI\/UX Design/);
