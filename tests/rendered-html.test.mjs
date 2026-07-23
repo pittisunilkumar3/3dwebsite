@@ -74,6 +74,14 @@ test("keeps the authored camera and model rules in place", async () => {
   assert.match(tour, /actionHref: "https:\/\/prodyum\.in\/it\/contact"/);
   assert.doesNotMatch(tour, /className="tour-header"/);
   assert.match(tour, /className="story-cta"/);
+  assert.match(tour, /className="services-flow"/);
+  assert.match(tour, /aria-pressed=\{isSelected\}/);
+  assert.match(tour, /Point 02 · Interactive service map/);
+  assert.match(tour, /Social Media Management/);
+  assert.match(tour, /Brand Identity Design/);
+  assert.match(tour, /E-commerce Websites/);
+  assert.match(tour, /Promotional Videos/);
+  assert.match(tour, /const showServicesFlow = activeStop === 1 && !isNavigating/);
   assert.match(tour, /className={`landing-hero\$\{isLanding \? "" : " is-hidden"\}`}/);
   assert.match(tour, /setIsLanding\(window\.scrollY <= 8\)/);
   assert.match(tour, /Digital Solutions Partner/);

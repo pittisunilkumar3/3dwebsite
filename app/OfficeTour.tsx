@@ -48,6 +48,13 @@ type CameraFlight = {
   endFov: number;
 };
 
+type ServiceBranch = {
+  code: string;
+  title: string;
+  summary: string;
+  items: string[];
+};
+
 const VIEWING_DISTANCE = 4;
 
 function getTourViewPosition(stop: TourStop, result = new THREE.Vector3()) {
@@ -90,12 +97,12 @@ const TOUR_STOPS: TourStop[] = [
     fov: 45,
   },
   {
-    eyebrow: "Services / Digital Marketing",
+    eyebrow: "Services / Interactive Map",
     title: "Evidence files",
-    contentTitle: "Digital Marketing",
-    description: "Increase online visibility and reach the right audience through strategic, measurable marketing.",
-    detail: "Social · Search · Content",
-    actionLabel: "Explore Marketing",
+    contentTitle: "Our Services",
+    description: "Explore ProDyum's complete digital offering through an interactive connected service map.",
+    detail: "Marketing · Branding · Web · Video",
+    actionLabel: "View All Services",
     actionHref: "https://prodyum.in/it/services",
     target: [12.9, 0.84, -15.95],
     viewDirection: [-0.2, 0.98],
@@ -298,6 +305,55 @@ const TOUR_STOPS: TourStop[] = [
     cameraHeight: 3.55,
     marker: [10.02, 1.1, -15.92],
     fov: 42,
+  },
+];
+
+const SERVICE_BRANCHES: ServiceBranch[] = [
+  {
+    code: "01",
+    title: "Digital Marketing",
+    summary: "Increase visibility and reach the right audience with measurable campaigns.",
+    items: [
+      "Social Media Management",
+      "Meta Ads & Google Ads",
+      "Search Engine Optimization",
+      "YouTube Marketing",
+      "Content Strategy",
+    ],
+  },
+  {
+    code: "02",
+    title: "Branding & Design",
+    summary: "Build a distinctive brand identity and clear visual communication.",
+    items: [
+      "Logo Design",
+      "Brand Identity Design",
+      "Social Media Creatives",
+      "Marketing Graphics",
+      "UI/UX Design",
+    ],
+  },
+  {
+    code: "03",
+    title: "Web Development",
+    summary: "Launch modern, responsive websites designed around business outcomes.",
+    items: [
+      "Business Websites",
+      "Corporate Websites",
+      "Landing Pages",
+      "E-commerce Websites",
+    ],
+  },
+  {
+    code: "04",
+    title: "Video & Multimedia",
+    summary: "Create professional visual content that captures and converts attention.",
+    items: [
+      "Product Shoots",
+      "Promotional Videos",
+      "Social Media Videos",
+      "Video Editing",
+    ],
   },
 ];
 
@@ -639,6 +695,107 @@ function Hotspots({
   );
 }
 
+function ServicesFlow({
+  selectedIndex,
+  onSelect,
+  onPrevious,
+  onNext,
+}: {
+  selectedIndex: number;
+  onSelect: (index: number) => void;
+  onPrevious: () => void;
+  onNext: () => void;
+}) {
+  const selectedService = SERVICE_BRANCHES[selectedIndex];
+
+  return (
+    <section className="services-flow" aria-labelledby="services-flow-title">
+      <div className="services-flow-heading">
+        <div>
+          <span>Point 02 · Interactive service map</span>
+          <h1 id="services-flow-title">Our Services</h1>
+        </div>
+        <p>Select a connected service to see everything included.</p>
+      </div>
+
+      <div className="services-map">
+        <span className="service-wire service-wire--left-top" aria-hidden="true" />
+        <span className="service-wire service-wire--left-bottom" aria-hidden="true" />
+        <span className="service-wire service-wire--right-top" aria-hidden="true" />
+        <span className="service-wire service-wire--right-bottom" aria-hidden="true" />
+
+        <div className="service-hub" aria-hidden="true">
+          <span>Point</span>
+          <strong>02</strong>
+          <small>Services</small>
+        </div>
+
+        {SERVICE_BRANCHES.map((service, index) => {
+          const position = [
+            "left-top",
+            "left-bottom",
+            "right-top",
+            "right-bottom",
+          ][index];
+          const isSelected = selectedIndex === index;
+
+          return (
+            <button
+              key={service.title}
+              type="button"
+              className={`service-node service-node--${position}${isSelected ? " is-selected" : ""}`}
+              onClick={() => onSelect(index)}
+              aria-pressed={isSelected}
+              aria-controls="service-flow-detail"
+            >
+              <span className="service-node-number">{service.code}</span>
+              <span className="service-node-copy">
+                <strong>{service.title}</strong>
+                <small>{service.summary}</small>
+              </span>
+              <i aria-hidden="true">+</i>
+            </button>
+          );
+        })}
+      </div>
+
+      <div
+        className="service-explanation"
+        id="service-flow-detail"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        <span className="service-explanation-code">{selectedService.code}</span>
+        <div className="service-explanation-copy">
+          <h2>{selectedService.title}</h2>
+          <p>{selectedService.summary}</p>
+        </div>
+        <ul aria-label={`${selectedService.title} includes`}>
+          {selectedService.items.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
+        </ul>
+        <a
+          href="https://prodyum.in/it/services"
+          target="_blank"
+          rel="noreferrer"
+          aria-label={`Explore ${selectedService.title} on ProDyum IT`}
+        >
+          Explore service <span aria-hidden="true">↗</span>
+        </a>
+      </div>
+
+      <div className="services-flow-actions">
+        <button type="button" onClick={onPrevious}>Previous view</button>
+        <span>Choose any connected box</span>
+        <button type="button" onClick={onNext}>
+          Next view <i aria-hidden="true">↘</i>
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function LoadingScreen() {
   const { progress, active } = useProgress();
   const [visible, setVisible] = useState(true);
@@ -674,6 +831,7 @@ export default function OfficeTour() {
   const [isLanding, setIsLanding] = useState(true);
   const [isNavigating, setIsNavigating] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [selectedServiceIndex, setSelectedServiceIndex] = useState(0);
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -799,6 +957,7 @@ export default function OfficeTour() {
           actionHref: null,
         }
       : story;
+  const showServicesFlow = activeStop === 1 && !isNavigating;
 
   return (
     <main className={`office-tour${isLanding ? " is-landing" : ""}`}>
@@ -884,7 +1043,15 @@ export default function OfficeTour() {
       </nav>
 
       {activeFrame > 0 ? (
-        <section className={`story-card${stop ? "" : " is-overview"}${isNavigating ? " is-travelling" : ""}`} aria-live="polite" aria-atomic="true">
+        showServicesFlow ? (
+          <ServicesFlow
+            selectedIndex={selectedServiceIndex}
+            onSelect={setSelectedServiceIndex}
+            onPrevious={() => goToFrame(Math.max(activeFrame - 1, 0))}
+            onNext={() => goToFrame(Math.min(activeFrame + 1, TOUR_FRAMES.length - 1))}
+          />
+        ) : (
+          <section className={`story-card${stop ? "" : " is-overview"}${isNavigating ? " is-travelling" : ""}`} aria-live="polite" aria-atomic="true">
           <div className="story-meta">
             <span>{presentedStory.meta}</span>
             <span>{presentedStory.eyebrow}</span>
@@ -920,7 +1087,8 @@ export default function OfficeTour() {
               Next view <span aria-hidden="true">↘</span>
             </button>
           </div>
-        </section>
+          </section>
+        )
       ) : null}
 
       <div className={`scroll-cue${activeFrame > 0 ? " is-hidden" : ""}`} aria-hidden="true">
