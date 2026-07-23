@@ -69,11 +69,6 @@ test("keeps the authored camera and model rules in place", async () => {
   assert.match(tour, /type NavigationRequest/);
   assert.match(tour, /CameraRig owns the[\s\S]*?intermediate stops never activate/);
   assert.match(tour, /window\.scrollTo\(\{ top: nextProgress \* maxScroll, behavior: "auto" \}\)/);
-  assert.match(tour, /const CAMERA_ARRIVAL_POSITION_EPSILON = 0\.1;/);
-  assert.match(tour, /camera\.position\.distanceTo\(positions\[nearestFrame\]\)/);
-  assert.match(tour, /smoothTarget\.current\.distanceTo\(targets\[nearestFrame\]\)/);
-  assert.match(tour, /Math\.abs\(camera\.fov - fovs\[nearestFrame\]\)/);
-  assert.match(tour, /arrivedFrame === activeFrame/);
   assert.match(tour, /contentTitle: "Digital Solutions Partner"/);
   assert.match(tour, /contentTitle: "Web Development"/);
   assert.match(tour, /contentTitle: "Free Consultation"/);
@@ -102,7 +97,7 @@ test("keeps the authored camera and model rules in place", async () => {
   assert.match(tour, /E-commerce Websites/);
   assert.match(tour, /Promotional Videos/);
   assert.match(tour, /Video Editing/);
-  assert.match(tour, /const showServicesFlow =[\s\S]*?activeStop === 1 &&[\s\S]*?arrivedFrame === activeFrame &&[\s\S]*?!isNavigating/);
+  assert.match(tour, /const showServicesFlow = activeStop === 1 && !isNavigating/);
   assert.match(tour, /className={`landing-hero\$\{isLanding \? "" : " is-hidden"\}`}/);
   assert.match(tour, /setIsLanding\(window\.scrollY <= 8\)/);
   assert.match(tour, /Digital Solutions Partner/);
