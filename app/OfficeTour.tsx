@@ -79,6 +79,9 @@ type ServiceItem = {
 };
 
 const VIEWING_DISTANCE = 4;
+const SERVICES_FRAME_INDEX = 3;
+const SERVICES_SCROLL_ALIGNMENT_EPSILON = 0.035;
+const SERVICES_REVEAL_DELAY_MS = 1200;
 
 function getTourViewPosition(stop: TourStop, result = new THREE.Vector3()) {
   const target = new THREE.Vector3(...stop.target);
@@ -998,6 +1001,8 @@ export default function OfficeTour() {
   const navigationIdRef = useRef(0);
   const activeFrameRef = useRef(0);
   const [activeFrame, setActiveFrame] = useState(0);
+  const [isServiceScrollAligned, setIsServiceScrollAligned] = useState(false);
+  const [isServicePointReady, setIsServicePointReady] = useState(false);
   const [isLanding, setIsLanding] = useState(true);
   const [isNavigating, setIsNavigating] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
@@ -1017,9 +1022,17 @@ export default function OfficeTour() {
       const nextProgress = THREE.MathUtils.clamp(window.scrollY / maxScroll, 0, 1);
       setIsLanding(window.scrollY <= 8);
       progressRef.current = nextProgress;
+      const scaledProgress = nextProgress * (TOUR_FRAMES.length - 1);
+      const serviceScrollAligned =
+        Math.abs(scaledProgress - SERVICES_FRAME_INDEX) <=
+        SERVICES_SCROLL_ALIGNMENT_EPSILON;
+      setIsServiceScrollAligned(serviceScrollAligned);
+      if (!serviceScrollAligned) {
+        setIsServicePointReady(false);
+      }
       const nextActiveFrame = Math.min(
         TOUR_FRAMES.length - 1,
-        Math.round(nextProgress * (TOUR_FRAMES.length - 1)),
+        Math.round(scaledProgress),
       );
       if (nextActiveFrame !== activeFrameRef.current) {
         activeFrameRef.current = nextActiveFrame;
@@ -1036,6 +1049,22 @@ export default function OfficeTour() {
     };
   }, []);
 
+  useEffect(() => {
+    if (
+      isNavigating ||
+      activeFrame !== SERVICES_FRAME_INDEX ||
+      !isServiceScrollAligned
+    ) {
+      return;
+    }
+
+    const revealTimeout = window.setTimeout(() => {
+      setIsServicePointReady(true);
+    }, SERVICES_REVEAL_DELAY_MS);
+
+    return () => window.clearTimeout(revealTimeout);
+  }, [activeFrame, isNavigating, isServiceScrollAligned]);
+
   const goToFrame = useCallback(
     (frameIndex: number) => {
       const nextFrame = THREE.MathUtils.clamp(
@@ -1043,8 +1072,13 @@ export default function OfficeTour() {
         0,
         TOUR_FRAMES.length - 1,
       );
+      const isScrollAligned =
+        Math.abs(
+          progressRef.current * (TOUR_FRAMES.length - 1) - nextFrame,
+        ) <= SERVICES_SCROLL_ALIGNMENT_EPSILON;
       if (
         nextFrame === activeFrameRef.current &&
+        isScrollAligned &&
         navigationRequestRef.current === null
       ) {
         setIsNavigating(false);
@@ -1054,6 +1088,7 @@ export default function OfficeTour() {
       const nextProgress = nextFrame / (TOUR_FRAMES.length - 1);
 
       setIsNavigating(true);
+      setIsServicePointReady(false);
       navigationIdRef.current += 1;
       navigationRequestRef.current = {
         id: navigationIdRef.current,
@@ -1073,6 +1108,9 @@ export default function OfficeTour() {
 
   const handleNavigationSettled = useCallback(() => {
     setIsNavigating(false);
+    setIsServicePointReady(
+      activeFrameRef.current === SERVICES_FRAME_INDEX,
+    );
   }, []);
 
   const goToStop = useCallback(
@@ -1127,7 +1165,10 @@ export default function OfficeTour() {
           actionHref: null,
         }
       : story;
-  const showServicesFlow = activeStop === 1 && !isNavigating;
+  const showServicesFlow =
+    activeStop === 1 &&
+    isServicePointReady &&
+    !isNavigating;
 
   return (
     <main className={`office-tour${isLanding ? " is-landing" : ""}${showServicesFlow ? " is-services" : ""}`}>
