@@ -694,6 +694,57 @@ a:focus-visible {
   text-transform: uppercase;
 }
 
+.point-one-controls {
+  position: fixed;
+  z-index: 58;
+  left: 50%;
+  bottom: 24px;
+  padding: 8px 13px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  border: 1px solid rgba(53, 200, 108, 0.28);
+  border-radius: 999px;
+  background: rgba(5, 13, 17, 0.76);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(14px);
+  transform: translateX(-50%);
+}
+
+.point-one-controls button,
+.point-one-controls a {
+  padding: 4px 0;
+  border: 0;
+  background: transparent;
+  color: rgba(243, 239, 230, 0.68);
+  cursor: pointer;
+  font-size: 8px;
+  font-weight: 650;
+  letter-spacing: 0.11em;
+  text-decoration: none;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.point-one-controls button:last-child {
+  color: var(--paper);
+}
+
+.point-one-controls > span {
+  color: var(--prodyum-green);
+  font: 650 7px/1 var(--font-geist-mono), monospace;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.point-one-controls i {
+  margin-left: 6px;
+  color: var(--prodyum-green);
+  font-size: 11px;
+  font-style: normal;
+}
+
 .office-tour.is-company-overview .tour-rail,
 .office-tour.is-company-overview .chapter-count {
   opacity: 0;
@@ -1594,6 +1645,7 @@ a:focus-visible {
     display: none;
   }
 
+  .point-one-controls,
   .point-two-controls {
     bottom: 62px;
   }
@@ -1898,6 +1950,19 @@ a:focus-visible {
 }
 
 @media (max-width: 560px) {
+  .point-one-controls {
+    right: 12px;
+    bottom: 14px;
+    left: 12px;
+    justify-content: space-between;
+    gap: 10px;
+    transform: none;
+  }
+
+  .point-one-controls > span {
+    display: none;
+  }
+
   .point-two-controls {
     gap: 12px;
     padding: 7px 10px;

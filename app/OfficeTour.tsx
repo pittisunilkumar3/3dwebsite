@@ -79,8 +79,13 @@ type ServiceItem = {
 };
 
 const VIEWING_DISTANCE = 4;
+const COMPACT_COMPANY_VIEWING_DISTANCE = 4.1;
 
-function getTourViewPosition(stop: TourStop, result = new THREE.Vector3()) {
+function getTourViewPosition(
+  stop: TourStop,
+  result = new THREE.Vector3(),
+  viewingDistance = VIEWING_DISTANCE,
+) {
   const target = new THREE.Vector3(...stop.target);
   const viewDirection = new THREE.Vector3(
     stop.viewDirection[0],
@@ -89,11 +94,11 @@ function getTourViewPosition(stop: TourStop, result = new THREE.Vector3()) {
   ).normalize();
   const verticalDistance = stop.cameraHeight - target.y;
   const horizontalDistance = Math.sqrt(
-    Math.max(VIEWING_DISTANCE ** 2 - verticalDistance ** 2, 0),
+    Math.max(viewingDistance ** 2 - verticalDistance ** 2, 0),
   );
 
-  // Each authored direction is preserved and the camera remains exactly
-  // four metres from its subject in three-dimensional space.
+  // Each authored direction is preserved while the viewing distance can widen
+  // for compact screens without changing the intended angle.
   return result
     .copy(target)
     .addScaledVector(viewDirection, horizontalDistance)
@@ -113,10 +118,10 @@ const TOUR_STOPS: TourStop[] = [
     detail: "Strategy · Creativity · Technology",
     actionLabel: "Explore Our Story",
     actionHref: "https://prodyum.in/it/about",
-    target: [3.3, 0.85, -12.67],
+    target: [3.3, 1.6, -12.67],
     viewDirection: [-0.7, -0.72],
-    cameraHeight: 3.6,
-    marker: [3.3, 1.2, -12.67],
+    cameraHeight: 2.6,
+    marker: [3.3, 1.05, -12.67],
     fov: 45,
   },
   {
@@ -520,10 +525,19 @@ const TOUR_FRAMES: TourFrame[] = [
   ]),
 ];
 
-function getFramePosition(frame: TourFrame) {
+function getFramePosition(frame: TourFrame, compactViewport = false) {
+  const compactCompanyView =
+    compactViewport && frame.kind === "stop" && frame.stopIndex === 0;
+
   return frame.kind === "overview"
     ? TOP_VIEW_POSITION.clone()
-    : getTourViewPosition(TOUR_STOPS[frame.stopIndex]);
+    : getTourViewPosition(
+        TOUR_STOPS[frame.stopIndex],
+        new THREE.Vector3(),
+        compactCompanyView
+          ? COMPACT_COMPANY_VIEWING_DISTANCE
+          : VIEWING_DISTANCE,
+      );
 }
 
 function getFrameTarget(frame: TourFrame) {
@@ -532,7 +546,11 @@ function getFrameTarget(frame: TourFrame) {
     : getTourViewTarget(TOUR_STOPS[frame.stopIndex]);
 }
 
-function getFrameFov(frame: TourFrame) {
+function getFrameFov(frame: TourFrame, compactViewport = false) {
+  if (compactViewport && frame.kind === "stop" && frame.stopIndex === 0) {
+    return 72;
+  }
+
   return frame.kind === "overview"
     ? TOP_VIEW_FOV
     : TOUR_STOPS[frame.stopIndex].fov;
@@ -543,21 +561,26 @@ function CameraRig({
   navigationRequestRef,
   onNavigationSettled,
   reducedMotion,
+  compactViewport,
 }: {
   progressRef: React.MutableRefObject<number>;
   navigationRequestRef: React.MutableRefObject<NavigationRequest | null>;
   onNavigationSettled: () => void;
   reducedMotion: boolean;
+  compactViewport: boolean;
 }) {
   const positions = useMemo(
-    () => TOUR_FRAMES.map(getFramePosition),
-    [],
+    () => TOUR_FRAMES.map((frame) => getFramePosition(frame, compactViewport)),
+    [compactViewport],
   );
   const targets = useMemo(
     () => TOUR_FRAMES.map(getFrameTarget),
     [],
   );
-  const fovs = useMemo(() => TOUR_FRAMES.map(getFrameFov), []);
+  const fovs = useMemo(
+    () => TOUR_FRAMES.map((frame) => getFrameFov(frame, compactViewport)),
+    [compactViewport],
+  );
   const desiredPositionRef = useRef(new THREE.Vector3());
   const desiredTargetRef = useRef(new THREE.Vector3());
   const smoothTarget = useRef(targets[0].clone());
@@ -840,125 +863,590 @@ function Hotspots({
   );
 }
 
-function CompanyOverview({
-  onPrevious,
-  onNext,
+function roundedCanvasPath(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+) {
+  const corner = Math.min(radius, width / 2, height / 2);
+  context.beginPath();
+  context.moveTo(x + corner, y);
+  context.lineTo(x + width - corner, y);
+  context.quadraticCurveTo(x + width, y, x + width, y + corner);
+  context.lineTo(x + width, y + height - corner);
+  context.quadraticCurveTo(
+    x + width,
+    y + height,
+    x + width - corner,
+    y + height,
+  );
+  context.lineTo(x + corner, y + height);
+  context.quadraticCurveTo(x, y + height, x, y + height - corner);
+  context.lineTo(x, y + corner);
+  context.quadraticCurveTo(x, y, x + corner, y);
+  context.closePath();
+}
+
+function drawWrappedCanvasText(
+  context: CanvasRenderingContext2D,
+  text: string,
+  x: number,
+  y: number,
+  maxWidth: number,
+  lineHeight: number,
+  maxLines = 3,
+) {
+  const words = text.split(" ");
+  const lines: string[] = [];
+  let currentLine = "";
+
+  words.forEach((word) => {
+    const candidate = currentLine ? `${currentLine} ${word}` : word;
+    if (context.measureText(candidate).width > maxWidth && currentLine) {
+      lines.push(currentLine);
+      currentLine = word;
+    } else {
+      currentLine = candidate;
+    }
+  });
+
+  if (currentLine) lines.push(currentLine);
+  lines.slice(0, maxLines).forEach((line, index) => {
+    context.fillText(line, x, y + index * lineHeight);
+  });
+}
+
+function createCompactCompanyOverviewTexture() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1000;
+  canvas.height = 1500;
+  const context = canvas.getContext("2d");
+  if (!context) return new THREE.Texture();
+
+  context.save();
+  roundedCanvasPath(context, 10, 10, 980, 1480, 42);
+  context.clip();
+
+  const background = context.createLinearGradient(0, 0, 1000, 1500);
+  background.addColorStop(0, "rgba(4, 17, 25, 0.99)");
+  background.addColorStop(0.58, "rgba(5, 14, 20, 0.98)");
+  background.addColorStop(1, "rgba(5, 28, 22, 0.97)");
+  context.fillStyle = background;
+  context.fillRect(0, 0, 1000, 1500);
+
+  const glow = context.createRadialGradient(800, 90, 0, 800, 90, 520);
+  glow.addColorStop(0, "rgba(53, 200, 108, 0.2)");
+  glow.addColorStop(1, "rgba(53, 200, 108, 0)");
+  context.fillStyle = glow;
+  context.fillRect(300, 0, 700, 650);
+
+  context.strokeStyle = "rgba(255,255,255,0.035)";
+  context.lineWidth = 1;
+  for (let x = 40; x < 1000; x += 60) {
+    context.beginPath();
+    context.moveTo(x, 0);
+    context.lineTo(x, 1500);
+    context.stroke();
+  }
+  for (let y = 40; y < 1500; y += 60) {
+    context.beginPath();
+    context.moveTo(0, y);
+    context.lineTo(1000, y);
+    context.stroke();
+  }
+  context.restore();
+
+  context.strokeStyle = "rgba(73, 229, 143, 0.62)";
+  context.lineWidth = 4;
+  roundedCanvasPath(context, 10, 10, 980, 1480, 42);
+  context.stroke();
+
+  const topLine = context.createLinearGradient(65, 0, 470, 0);
+  topLine.addColorStop(0, "#149ee7");
+  topLine.addColorStop(1, "#35c86c");
+  context.fillStyle = topLine;
+  context.fillRect(62, 10, 408, 7);
+
+  context.font = '700 24px "SFMono-Regular", monospace';
+  context.letterSpacing = "3px";
+  context.fillStyle = "#48dd87";
+  context.fillText("POINT 01", 64, 72);
+  context.textAlign = "right";
+  context.fillStyle = "rgba(236, 244, 241, 0.52)";
+  context.fillText("COMPANY OVERVIEW", 936, 72);
+  context.textAlign = "left";
+  context.letterSpacing = "0px";
+
+  context.strokeStyle = "rgba(236,244,241,0.13)";
+  context.lineWidth = 2;
+  context.beginPath();
+  context.moveTo(64, 108);
+  context.lineTo(936, 108);
+  context.stroke();
+
+  context.font = '700 24px "SFMono-Regular", monospace';
+  context.fillStyle = "#41bdf1";
+  context.fillText("PRODYUM IT PVT LTD", 64, 166);
+
+  context.font = '500 72px Georgia, "Times New Roman", serif';
+  context.fillStyle = "#f4f4ef";
+  context.fillText("IDEAS INTO", 64, 257);
+  const titleGradient = context.createLinearGradient(64, 0, 760, 0);
+  titleGradient.addColorStop(0, "#25a9eb");
+  titleGradient.addColorStop(1, "#46df86");
+  context.fillStyle = titleGradient;
+  context.fillText("DIGITAL GROWTH.", 64, 338);
+
+  context.font = '400 28px "Avenir Next", Arial, sans-serif';
+  context.fillStyle = "rgba(236,244,241,0.72)";
+  drawWrappedCanvasText(
+    context,
+    "A Hyderabad-based digital solutions company combining strategy, creativity, and technology to help businesses build stronger brands and grow online.",
+    64,
+    405,
+    872,
+    42,
+    4,
+  );
+
+  roundedCanvasPath(context, 64, 560, 872, 82, 18);
+  context.fillStyle = "rgba(20,158,231,0.10)";
+  context.fill();
+  context.strokeStyle = "rgba(53,200,108,0.35)";
+  context.stroke();
+  context.font = '700 18px "SFMono-Regular", monospace';
+  context.fillStyle = "#48dd87";
+  context.fillText("OUR APPROACH", 92, 593);
+  context.font = '600 24px "Avenir Next", Arial, sans-serif';
+  context.fillStyle = "#f3f6f3";
+  context.fillText("Strategy  +  Creativity  +  Technology", 92, 626);
+
+  context.font = '700 20px "SFMono-Regular", monospace';
+  context.fillStyle = "#48dd87";
+  context.fillText("WHAT WE DO", 64, 704);
+
+  COMPANY_CAPABILITIES.forEach((capability, index) => {
+    const x = 64;
+    const y = 736 + index * 137;
+
+    roundedCanvasPath(context, x, y, 872, 116, 16);
+    context.fillStyle = "rgba(2,10,14,0.52)";
+    context.fill();
+    context.strokeStyle = `${capability.color}80`;
+    context.lineWidth = 2;
+    context.stroke();
+    context.fillStyle = capability.color;
+    context.fillRect(x, y + 16, 6, 84);
+
+    context.font = '700 20px "SFMono-Regular", monospace';
+    context.fillText(capability.code, x + 30, y + 45);
+    context.font = '700 28px "Avenir Next", Arial, sans-serif';
+    context.fillStyle = "#f3f6f3";
+    context.fillText(capability.title, x + 92, y + 46);
+    context.font = '400 21px "Avenir Next", Arial, sans-serif';
+    context.fillStyle = "rgba(236,244,241,0.58)";
+    drawWrappedCanvasText(
+      context,
+      capability.description,
+      x + 30,
+      y + 83,
+      810,
+      27,
+      2,
+    );
+  });
+
+  roundedCanvasPath(context, 64, 1300, 872, 118, 16);
+  const purposeGradient = context.createLinearGradient(64, 0, 936, 0);
+  purposeGradient.addColorStop(0, "rgba(20,158,231,0.12)");
+  purposeGradient.addColorStop(1, "rgba(53,200,108,0.12)");
+  context.fillStyle = purposeGradient;
+  context.fill();
+  context.strokeStyle = "rgba(236,244,241,0.15)";
+  context.stroke();
+
+  context.font = '700 18px "SFMono-Regular", monospace';
+  context.fillStyle = "#41bdf1";
+  context.fillText("MISSION", 90, 1335);
+  context.fillStyle = "#48dd87";
+  context.fillText("VISION", 530, 1335);
+  context.font = '500 20px "Avenir Next", Arial, sans-serif';
+  context.fillStyle = "rgba(244,246,243,0.78)";
+  drawWrappedCanvasText(
+    context,
+    "Modern, measurable digital solutions.",
+    90,
+    1371,
+    380,
+    27,
+    2,
+  );
+  drawWrappedCanvasText(
+    context,
+    "A trusted partner for ambitious brands.",
+    530,
+    1371,
+    360,
+    27,
+    2,
+  );
+
+  context.font = '600 18px "SFMono-Regular", monospace';
+  context.fillStyle = "rgba(236,244,241,0.54)";
+  context.fillText("MARKETING · BRANDING · WEB · VIDEO", 64, 1460);
+  context.textAlign = "right";
+  context.fillStyle = "#48dd87";
+  context.fillText("PRODYUM.IN", 936, 1460);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+function createCompanyOverviewTexture(compactViewport = false) {
+  if (typeof document === "undefined") {
+    return new THREE.Texture();
+  }
+
+  if (compactViewport) {
+    return createCompactCompanyOverviewTexture();
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 1600;
+  canvas.height = 1000;
+  const context = canvas.getContext("2d");
+  if (!context) return new THREE.Texture();
+
+  context.save();
+  roundedCanvasPath(context, 10, 10, 1580, 980, 44);
+  context.clip();
+
+  const background = context.createLinearGradient(0, 0, 1600, 1000);
+  background.addColorStop(0, "rgba(4, 17, 25, 0.98)");
+  background.addColorStop(0.58, "rgba(5, 14, 20, 0.97)");
+  background.addColorStop(1, "rgba(5, 25, 21, 0.96)");
+  context.fillStyle = background;
+  context.fillRect(0, 0, 1600, 1000);
+
+  const glow = context.createRadialGradient(1380, 100, 0, 1380, 100, 520);
+  glow.addColorStop(0, "rgba(53, 200, 108, 0.19)");
+  glow.addColorStop(1, "rgba(53, 200, 108, 0)");
+  context.fillStyle = glow;
+  context.fillRect(800, 0, 800, 600);
+
+  context.strokeStyle = "rgba(255,255,255,0.035)";
+  context.lineWidth = 1;
+  for (let x = 40; x < 1600; x += 60) {
+    context.beginPath();
+    context.moveTo(x, 0);
+    context.lineTo(x, 1000);
+    context.stroke();
+  }
+  for (let y = 40; y < 1000; y += 60) {
+    context.beginPath();
+    context.moveTo(0, y);
+    context.lineTo(1600, y);
+    context.stroke();
+  }
+  context.restore();
+
+  context.strokeStyle = "rgba(73, 229, 143, 0.58)";
+  context.lineWidth = 4;
+  roundedCanvasPath(context, 10, 10, 1580, 980, 44);
+  context.stroke();
+
+  const topLine = context.createLinearGradient(70, 0, 520, 0);
+  topLine.addColorStop(0, "#149ee7");
+  topLine.addColorStop(1, "#35c86c");
+  context.fillStyle = topLine;
+  context.fillRect(78, 10, 430, 6);
+
+  context.font = '700 24px "SFMono-Regular", monospace';
+  context.letterSpacing = "4px";
+  context.fillStyle = "#48dd87";
+  context.fillText("POINT 01", 80, 78);
+  context.fillStyle = "rgba(236, 244, 241, 0.52)";
+  context.fillText("COMPANY OVERVIEW", 260, 78);
+  context.textAlign = "right";
+  context.fillText("RECEPTION · HYDERABAD", 1515, 78);
+  context.textAlign = "left";
+  context.letterSpacing = "0px";
+
+  context.strokeStyle = "rgba(236,244,241,0.13)";
+  context.lineWidth = 2;
+  context.beginPath();
+  context.moveTo(80, 112);
+  context.lineTo(1520, 112);
+  context.stroke();
+
+  context.font = '700 25px "SFMono-Regular", monospace';
+  context.fillStyle = "#41bdf1";
+  context.fillText("PRODYUM IT PVT LTD", 80, 176);
+
+  context.font = '500 74px Georgia, "Times New Roman", serif';
+  context.fillStyle = "#f4f4ef";
+  context.fillText("IDEAS INTO", 80, 272);
+  const titleGradient = context.createLinearGradient(80, 0, 620, 0);
+  titleGradient.addColorStop(0, "#25a9eb");
+  titleGradient.addColorStop(1, "#46df86");
+  context.fillStyle = titleGradient;
+  context.fillText("DIGITAL GROWTH.", 80, 354);
+
+  context.font = '400 30px "Avenir Next", Arial, sans-serif';
+  context.fillStyle = "rgba(236,244,241,0.72)";
+  drawWrappedCanvasText(
+    context,
+    "A Hyderabad-based digital solutions company combining strategy, creativity, and technology to help businesses build stronger brands and grow online.",
+    80,
+    425,
+    590,
+    46,
+    4,
+  );
+
+  roundedCanvasPath(context, 80, 585, 590, 86, 18);
+  context.fillStyle = "rgba(20,158,231,0.10)";
+  context.fill();
+  context.strokeStyle = "rgba(53,200,108,0.35)";
+  context.lineWidth = 2;
+  context.stroke();
+  context.font = '700 20px "SFMono-Regular", monospace';
+  context.fillStyle = "#48dd87";
+  context.fillText("OUR APPROACH", 110, 620);
+  context.font = '600 25px "Avenir Next", Arial, sans-serif';
+  context.fillStyle = "#f3f6f3";
+  context.fillText("Strategy  +  Creativity  +  Technology", 110, 654);
+
+  context.font = '700 22px "SFMono-Regular", monospace';
+  context.fillStyle = "rgba(236,244,241,0.58)";
+  context.fillText("BUILT FOR", 80, 742);
+  context.font = '600 25px "Avenir Next", Arial, sans-serif';
+  context.fillStyle = "#f1f4f1";
+  context.fillText("Startups · SMEs · Real estate · Education", 80, 783);
+  context.fillText("E-commerce · Entertainment · Local business", 80, 822);
+
+  context.strokeStyle = "rgba(236,244,241,0.12)";
+  context.beginPath();
+  context.moveTo(720, 150);
+  context.lineTo(720, 855);
+  context.stroke();
+
+  context.font = '700 22px "SFMono-Regular", monospace';
+  context.fillStyle = "#48dd87";
+  context.fillText("WHAT WE DO", 770, 176);
+  context.textAlign = "right";
+  context.fillStyle = "rgba(236,244,241,0.38)";
+  context.fillText("END-TO-END CAPABILITIES", 1515, 176);
+  context.textAlign = "left";
+
+  COMPANY_CAPABILITIES.forEach((capability, index) => {
+    const column = index % 2;
+    const row = Math.floor(index / 2);
+    const x = 770 + column * 380;
+    const y = 215 + row * 220;
+
+    roundedCanvasPath(context, x, y, 350, 190, 18);
+    context.fillStyle = "rgba(2,10,14,0.54)";
+    context.fill();
+    context.strokeStyle = `${capability.color}88`;
+    context.lineWidth = 2;
+    context.stroke();
+    context.fillStyle = capability.color;
+    context.fillRect(x, y + 18, 6, 154);
+
+    context.font = '700 21px "SFMono-Regular", monospace';
+    context.fillText(capability.code, x + 30, y + 48);
+    context.font = '700 30px "Avenir Next", Arial, sans-serif';
+    context.fillStyle = "#f3f6f3";
+    context.fillText(capability.title, x + 78, y + 52);
+    context.font = '400 23px "Avenir Next", Arial, sans-serif';
+    context.fillStyle = "rgba(236,244,241,0.58)";
+    drawWrappedCanvasText(
+      context,
+      capability.description,
+      x + 30,
+      y + 103,
+      295,
+      31,
+      3,
+    );
+  });
+
+  roundedCanvasPath(context, 770, 675, 730, 170, 18);
+  const purposeGradient = context.createLinearGradient(770, 0, 1500, 0);
+  purposeGradient.addColorStop(0, "rgba(20,158,231,0.10)");
+  purposeGradient.addColorStop(1, "rgba(53,200,108,0.10)");
+  context.fillStyle = purposeGradient;
+  context.fill();
+  context.strokeStyle = "rgba(236,244,241,0.15)";
+  context.stroke();
+
+  context.font = '700 20px "SFMono-Regular", monospace';
+  context.fillStyle = "#41bdf1";
+  context.fillText("MISSION", 800, 718);
+  context.fillStyle = "#48dd87";
+  context.fillText("VISION", 1155, 718);
+  context.font = '500 24px "Avenir Next", Arial, sans-serif';
+  context.fillStyle = "rgba(244,246,243,0.78)";
+  drawWrappedCanvasText(
+    context,
+    "Empower businesses with modern, measurable digital solutions.",
+    800,
+    760,
+    310,
+    33,
+    3,
+  );
+  drawWrappedCanvasText(
+    context,
+    "Become a trusted digital partner for ambitious brands across India.",
+    1155,
+    760,
+    310,
+    33,
+    3,
+  );
+
+  context.strokeStyle = "rgba(236,244,241,0.13)";
+  context.beginPath();
+  context.moveTo(80, 900);
+  context.lineTo(1520, 900);
+  context.stroke();
+  context.font = '600 21px "SFMono-Regular", monospace';
+  context.fillStyle = "rgba(236,244,241,0.55)";
+  context.fillText("DIGITAL MARKETING  ·  BRANDING  ·  WEB  ·  MULTIMEDIA", 80, 950);
+  context.textAlign = "right";
+  context.fillStyle = "#48dd87";
+  context.fillText("PRODYUM.IN", 1520, 950);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+function SceneCompanyOverview({
+  visible,
+  compactViewport,
 }: {
-  onPrevious: () => void;
-  onNext: () => void;
+  visible: boolean;
+  compactViewport: boolean;
 }) {
+  const groupRef = useRef<THREE.Group>(null);
+  const lightRef = useRef<THREE.PointLight>(null);
+  const revealRef = useRef(0);
+  const texture = useMemo(
+    () => createCompanyOverviewTexture(compactViewport),
+    [compactViewport],
+  );
+  const panelWidth = compactViewport ? 2.22 : 3.2;
+  const panelHeight = compactViewport ? 3.3 : 2;
+  const panelCenterY = compactViewport ? 2.15 : 1.68;
+  const baseY = -panelHeight / 2 - 0.11;
+  const panelQuaternion = useMemo(() => {
+    const panelPosition = new THREE.Vector3(3.3, panelCenterY, -12.67);
+    const cameraPosition = getTourViewPosition(
+      TOUR_STOPS[0],
+      new THREE.Vector3(),
+      compactViewport ? COMPACT_COMPANY_VIEWING_DISTANCE : VIEWING_DISTANCE,
+    );
+    const orientation = new THREE.Object3D();
+    orientation.position.copy(panelPosition);
+    orientation.lookAt(cameraPosition);
+    return orientation.quaternion.clone();
+  }, [compactViewport, panelCenterY]);
+
+  useEffect(() => () => texture.dispose(), [texture]);
+
+  useFrame((_, delta) => {
+    revealRef.current = THREE.MathUtils.damp(
+      revealRef.current,
+      visible ? 1 : 0,
+      visible ? 5.5 : 8,
+      delta,
+    );
+    const reveal = revealRef.current;
+
+    if (groupRef.current) {
+      groupRef.current.visible = reveal > 0.005 || visible;
+      groupRef.current.scale.setScalar(
+        THREE.MathUtils.lerp(0.72, 1, reveal),
+      );
+    }
+    if (lightRef.current) {
+      lightRef.current.intensity = reveal * 1.15;
+    }
+  });
+
   return (
-    <section
-      className="company-overview"
-      aria-labelledby="company-overview-title"
-      aria-live="polite"
+    <group
+      ref={groupRef}
+      position={[3.3, panelCenterY, -12.67]}
+      quaternion={panelQuaternion}
+      visible={false}
     >
-      <div className="company-overview-orbit" aria-hidden="true">
-        <span />
-        <span />
-      </div>
+      <pointLight
+        ref={lightRef}
+        position={[0, 0, 0.7]}
+        color="#35c86c"
+        intensity={0}
+        distance={4}
+        decay={2}
+      />
 
-      <header className="company-overview-header">
-        <div>
-          <span className="company-overview-point">Point 01</span>
-          <span className="company-overview-location">Reception · Hyderabad</span>
-        </div>
-        <p>Company overview</p>
-      </header>
+      <mesh position={[0, 0, -0.035]}>
+        <boxGeometry args={[panelWidth + 0.12, panelHeight + 0.08, 0.07]} />
+        <meshStandardMaterial
+          color="#061015"
+          metalness={0.78}
+          roughness={0.24}
+          emissive="#0b4637"
+          emissiveIntensity={0.3}
+        />
+      </mesh>
 
-      <div className="company-overview-grid">
-        <div className="company-overview-intro">
-          <p className="company-overview-kicker">
-            ProDyum IT Pvt Ltd
-          </p>
-          <h1 id="company-overview-title">
-            One partner for
-            <strong>digital growth.</strong>
-          </h1>
-          <p className="company-overview-summary">
-            A Hyderabad-based digital solutions company bringing strategy,
-            creativity, and technology together to build stronger brands and
-            meaningful online growth.
-          </p>
+      <mesh position={[0, 0, 0.012]}>
+        <planeGeometry args={[panelWidth, panelHeight]} />
+        <meshBasicMaterial
+          map={texture}
+          transparent
+          toneMapped={false}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
 
-          <div className="company-overview-promise">
-            <span aria-hidden="true">ϟ</span>
-            <div>
-              <small>Our promise</small>
-              <strong>From first idea to measurable digital presence.</strong>
-            </div>
-          </div>
-
-          <a
-            className="company-overview-link"
-            href="https://prodyum.in/it/about"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Explore our complete story <span aria-hidden="true">↗</span>
-          </a>
-        </div>
-
-        <div className="company-overview-details">
-          <div className="company-overview-section-heading">
-            <span>What we do</span>
-            <small>End-to-end capabilities</small>
-          </div>
-
-          <div className="company-capabilities">
-            {COMPANY_CAPABILITIES.map((capability) => (
-              <article
-                key={capability.code}
-                className="company-capability"
-                style={{ "--capability-color": capability.color } as CSSProperties}
-              >
-                <span>{capability.code}</span>
-                <div>
-                  <h2>{capability.title}</h2>
-                  <p>{capability.description}</p>
-                </div>
-              </article>
-            ))}
-          </div>
-
-          <div className="company-purpose">
-            <article>
-              <span>Mission</span>
-              <p>
-                Empower businesses with modern digital solutions that improve
-                visibility, engagement, and growth.
-              </p>
-            </article>
-            <article>
-              <span>Vision</span>
-              <p>
-                Become a trusted digital partner for ambitious businesses
-                across India.
-              </p>
-            </article>
-          </div>
-        </div>
-      </div>
-
-      <footer className="company-overview-footer">
-        <div className="company-audiences" aria-label="Industries and clients we serve">
-          <span>Built for</span>
-          <div>
-            {COMPANY_AUDIENCES.map((audience) => (
-              <small key={audience}>{audience}</small>
-            ))}
-          </div>
-        </div>
-        <div className="company-overview-actions">
-          <button type="button" onClick={onPrevious}>
-            Previous view
-          </button>
-          <button type="button" className="next-action" onClick={onNext}>
-            Continue tour <span aria-hidden="true">↘</span>
-          </button>
-        </div>
-      </footer>
-    </section>
+      <mesh position={[0, baseY, -0.04]}>
+        <boxGeometry args={[1.14, 0.08, 0.18]} />
+        <meshStandardMaterial
+          color="#071318"
+          metalness={0.82}
+          roughness={0.2}
+          emissive="#149ee7"
+          emissiveIntensity={0.55}
+        />
+      </mesh>
+      <mesh position={[0, baseY + 0.11, -0.055]}>
+        <boxGeometry args={[0.05, 0.23, 0.07]} />
+        <meshStandardMaterial
+          color="#0b2028"
+          metalness={0.8}
+          roughness={0.22}
+          emissive="#35c86c"
+          emissiveIntensity={0.45}
+        />
+      </mesh>
+    </group>
   );
 }
 
@@ -1165,6 +1653,7 @@ export default function OfficeTour() {
   const [isLanding, setIsLanding] = useState(true);
   const [isNavigating, setIsNavigating] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [compactViewport, setCompactViewport] = useState(false);
   const [selectedServiceIndex, setSelectedServiceIndex] = useState(0);
 
   useEffect(() => {
@@ -1173,6 +1662,14 @@ export default function OfficeTour() {
     updatePreference();
     media.addEventListener("change", updatePreference);
     return () => media.removeEventListener("change", updatePreference);
+  }, []);
+
+  useEffect(() => {
+    const media = window.matchMedia("(max-width: 900px)");
+    const updateViewport = () => setCompactViewport(media.matches);
+    updateViewport();
+    media.addEventListener("change", updateViewport);
+    return () => media.removeEventListener("change", updateViewport);
   }, []);
 
   useEffect(() => {
@@ -1310,9 +1807,16 @@ export default function OfficeTour() {
           <directionalLight position={[-8, 5, -12]} intensity={0.42} color="#87a0b4" />
           <Suspense fallback={null}>
             <OfficeModel />
-            {!showServicesFlow ? (
-              <Hotspots active={activeStop} onSelect={goToStop} />
+            {!showServicesFlow && !showCompanyOverview ? (
+              <Hotspots
+                active={activeStop}
+                onSelect={goToStop}
+              />
             ) : null}
+            <SceneCompanyOverview
+              visible={showCompanyOverview}
+              compactViewport={compactViewport}
+            />
             <SceneServicesMap
               visible={showServicesFlow}
               selectedIndex={selectedServiceIndex}
@@ -1326,6 +1830,7 @@ export default function OfficeTour() {
             navigationRequestRef={navigationRequestRef}
             onNavigationSettled={handleNavigationSettled}
             reducedMotion={reducedMotion}
+            compactViewport={compactViewport}
           />
         </Canvas>
         <div className="scene-vignette" aria-hidden="true" />
@@ -1387,10 +1892,59 @@ export default function OfficeTour() {
       </nav>
 
       {showCompanyOverview ? (
-        <CompanyOverview
-          onPrevious={() => goToFrame(Math.max(activeFrame - 1, 0))}
-          onNext={() => goToFrame(Math.min(activeFrame + 1, TOUR_FRAMES.length - 1))}
-        />
+        <>
+          <section
+            className="company-overview-accessible sr-only"
+            aria-live="polite"
+            aria-labelledby="company-overview-title"
+          >
+            <h1 id="company-overview-title">ProDyum IT company overview</h1>
+            <p>
+              A Hyderabad-based digital solutions company combining strategy,
+              creativity, and technology to help businesses build stronger
+              brands and grow online.
+            </p>
+            <h2>What we do</h2>
+            <ul>
+              {COMPANY_CAPABILITIES.map((capability) => (
+                <li key={capability.code}>
+                  {capability.title}: {capability.description}
+                </li>
+              ))}
+            </ul>
+            <p>
+              Our mission is to empower businesses with modern, measurable
+              digital solutions. Our vision is to become a trusted digital
+              partner for ambitious brands across India.
+            </p>
+          </section>
+          <div className="point-one-controls" aria-label="Point 1 navigation">
+            <button
+              type="button"
+              onClick={() => goToFrame(Math.max(activeFrame - 1, 0))}
+            >
+              Previous view
+            </button>
+            <span>Point 01 · Company screen</span>
+            <a
+              href="https://prodyum.in/it/about"
+              target="_blank"
+              rel="noreferrer"
+            >
+              Full profile <i aria-hidden="true">↗</i>
+            </a>
+            <button
+              type="button"
+              onClick={() =>
+                goToFrame(
+                  Math.min(activeFrame + 1, TOUR_FRAMES.length - 1),
+                )
+              }
+            >
+              Continue tour <i aria-hidden="true">↘</i>
+            </button>
+          </div>
+        </>
       ) : null}
 
       {activeFrame > 0 && !showCompanyOverview && !showServicesFlow ? (
