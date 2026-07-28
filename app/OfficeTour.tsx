@@ -400,20 +400,20 @@ const COMPANY_BUBBLES = [
 ] as const;
 
 const DESKTOP_COMPANY_BUBBLE_LAYOUT = [
-  { position: [-1.12, 0.25, 0.02] as Vec3, radius: 0.9 },
-  { position: [0.2, 1, 0.08] as Vec3, radius: 0.58 },
-  { position: [1.42, 0.52, -0.02] as Vec3, radius: 0.58 },
-  { position: [0.22, -0.42, 0.06] as Vec3, radius: 0.58 },
-  { position: [1.42, -0.88, 0.1] as Vec3, radius: 0.58 },
-  { position: [-0.88, -1.03, 0.1] as Vec3, radius: 0.64 },
+  { position: [-1.45, 0.35, 0.02] as Vec3, radius: 0.88 },
+  { position: [0.15, 1.15, 0.08] as Vec3, radius: 0.54 },
+  { position: [1.55, 0.65, -0.02] as Vec3, radius: 0.54 },
+  { position: [0.15, -0.45, 0.06] as Vec3, radius: 0.54 },
+  { position: [1.55, -0.95, 0.1] as Vec3, radius: 0.54 },
+  { position: [-1.35, -1.35, 0.1] as Vec3, radius: 0.6 },
 ] as const;
 
 const COMPACT_COMPANY_BUBBLE_LAYOUT = [
-  { position: [0, 1.08, 0.02] as Vec3, radius: 0.84 },
-  { position: [-0.61, -0.08, 0.08] as Vec3, radius: 0.53 },
-  { position: [0.61, -0.08, -0.02] as Vec3, radius: 0.53 },
-  { position: [-0.61, -1.18, 0.06] as Vec3, radius: 0.53 },
-  { position: [0.61, -1.18, 0.1] as Vec3, radius: 0.53 },
+  { position: [0, 1.25, 0.02] as Vec3, radius: 0.8 },
+  { position: [-0.68, -0.15, 0.08] as Vec3, radius: 0.48 },
+  { position: [0.68, -0.15, -0.02] as Vec3, radius: 0.48 },
+  { position: [-0.68, -1.35, 0.06] as Vec3, radius: 0.48 },
+  { position: [0.68, -1.35, 0.1] as Vec3, radius: 0.48 },
 ] as const;
 
 const COMPANY_AUDIENCES = [
