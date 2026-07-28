@@ -118,11 +118,11 @@ const TOUR_STOPS: TourStop[] = [
     detail: "Strategy · Creativity · Technology",
     actionLabel: "Explore Our Story",
     actionHref: "https://prodyum.in/it/about",
-    target: [3.3, 1.6, -12.67],
+    target: [3.3, 2.05, -12.67],
     viewDirection: [-0.7, -0.72],
-    cameraHeight: 2.6,
+    cameraHeight: 2.7,
     marker: [3.3, 1.05, -12.67],
-    fov: 45,
+    fov: 55,
   },
   {
     eyebrow: "Services / Interactive Map",
@@ -363,6 +363,55 @@ const COMPANY_CAPABILITIES = [
   },
 ] as const;
 
+const COMPANY_BUBBLES = [
+  {
+    key: "overview",
+    code: "PRODYUM IT",
+    title: "Ideas Into",
+    description:
+      "Hyderabad digital solutions partner combining strategy, creativity, and technology.",
+    footer: "Strategy · Creativity · Technology",
+    color: "#35c86c",
+    kind: "hero",
+  },
+  ...COMPANY_CAPABILITIES.map((capability) => ({
+    key: capability.code,
+    code: capability.code,
+    title: capability.title,
+    description: capability.description,
+    footer: "End-to-end capability",
+    color: capability.color,
+    kind: "service",
+  })),
+  {
+    key: "purpose",
+    code: "MISSION · VISION",
+    title: "Grow With\nConfidence.",
+    description:
+      "Modern, measurable solutions from a trusted digital partner for ambitious brands.",
+    footer: "Built for business growth",
+    color: "#48dd87",
+    kind: "purpose",
+  },
+] as const;
+
+const DESKTOP_COMPANY_BUBBLE_LAYOUT = [
+  { position: [-1.12, 0.25, 0.02] as Vec3, radius: 0.9 },
+  { position: [0.2, 1, 0.08] as Vec3, radius: 0.58 },
+  { position: [1.42, 0.52, -0.02] as Vec3, radius: 0.58 },
+  { position: [0.22, -0.42, 0.06] as Vec3, radius: 0.58 },
+  { position: [1.42, -0.88, 0.1] as Vec3, radius: 0.58 },
+  { position: [-0.88, -1.03, 0.1] as Vec3, radius: 0.64 },
+] as const;
+
+const COMPACT_COMPANY_BUBBLE_LAYOUT = [
+  { position: [0, 1.08, 0.02] as Vec3, radius: 0.84 },
+  { position: [-0.61, -0.08, 0.08] as Vec3, radius: 0.53 },
+  { position: [0.61, -0.08, -0.02] as Vec3, radius: 0.53 },
+  { position: [-0.61, -1.18, 0.06] as Vec3, radius: 0.53 },
+  { position: [0.61, -1.18, 0.1] as Vec3, radius: 0.53 },
+] as const;
+
 const COMPANY_AUDIENCES = [
   "Startups & SMEs",
   "Real estate",
@@ -548,7 +597,7 @@ function getFrameTarget(frame: TourFrame) {
 
 function getFrameFov(frame: TourFrame, compactViewport = false) {
   if (compactViewport && frame.kind === "stop" && frame.stopIndex === 0) {
-    return 72;
+    return 70;
   }
 
   return frame.kind === "overview"
@@ -1336,6 +1385,193 @@ function createCompanyOverviewTexture(compactViewport = false) {
   return texture;
 }
 
+function drawCenteredBubbleText(
+  context: CanvasRenderingContext2D,
+  text: string,
+  centerX: number,
+  startY: number,
+  maxWidth: number,
+  lineHeight: number,
+  maxLines: number,
+) {
+  const lines: string[] = [];
+
+  text.split("\n").forEach((paragraph) => {
+    const words = paragraph.split(" ");
+    let currentLine = "";
+
+    words.forEach((word) => {
+      const candidate = currentLine ? `${currentLine} ${word}` : word;
+      if (
+        context.measureText(candidate).width > maxWidth &&
+        currentLine
+      ) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = candidate;
+      }
+    });
+
+    if (currentLine) lines.push(currentLine);
+  });
+
+  lines.slice(0, maxLines).forEach((line, index) => {
+    context.fillText(line, centerX, startY + index * lineHeight);
+  });
+
+  return Math.min(lines.length, maxLines);
+}
+
+function createCompanyBubbleTexture(
+  bubble: (typeof COMPANY_BUBBLES)[number],
+) {
+  if (typeof document === "undefined") {
+    return new THREE.Texture();
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = 1024;
+  canvas.height = 1024;
+  const context = canvas.getContext("2d");
+  if (!context) return new THREE.Texture();
+
+  const center = 512;
+  const radius = 474;
+  const glow = context.createRadialGradient(
+    center - 160,
+    center - 190,
+    20,
+    center,
+    center,
+    radius,
+  );
+  glow.addColorStop(0, `${bubble.color}45`);
+  glow.addColorStop(0.42, "rgba(7, 31, 38, 0.96)");
+  glow.addColorStop(1, "rgba(3, 12, 17, 0.98)");
+  context.fillStyle = glow;
+  context.beginPath();
+  context.arc(center, center, radius, 0, Math.PI * 2);
+  context.fill();
+
+  context.save();
+  context.beginPath();
+  context.arc(center, center, radius - 4, 0, Math.PI * 2);
+  context.clip();
+  context.strokeStyle = "rgba(255,255,255,0.035)";
+  context.lineWidth = 1;
+  for (let x = 80; x < 944; x += 54) {
+    context.beginPath();
+    context.moveTo(x, 90);
+    context.lineTo(x, 934);
+    context.stroke();
+  }
+  for (let y = 90; y < 934; y += 54) {
+    context.beginPath();
+    context.moveTo(80, y);
+    context.lineTo(944, y);
+    context.stroke();
+  }
+  context.restore();
+
+  context.lineWidth = 6;
+  context.strokeStyle = `${bubble.color}c8`;
+  context.beginPath();
+  context.arc(center, center, radius - 4, 0, Math.PI * 2);
+  context.stroke();
+
+  context.lineWidth = 3;
+  context.strokeStyle = "rgba(255,255,255,0.18)";
+  context.beginPath();
+  context.arc(center, center, radius - 24, Math.PI * 1.12, Math.PI * 1.76);
+  context.stroke();
+
+  const markerGradient = context.createLinearGradient(350, 0, 674, 0);
+  markerGradient.addColorStop(0, "#149ee7");
+  markerGradient.addColorStop(1, bubble.color);
+  context.strokeStyle = markerGradient;
+  context.lineWidth = 10;
+  context.lineCap = "round";
+  context.beginPath();
+  context.moveTo(414, 112);
+  context.lineTo(610, 112);
+  context.stroke();
+
+  context.textAlign = "center";
+  context.font = '700 27px "SFMono-Regular", monospace';
+  context.letterSpacing = "4px";
+  context.fillStyle = bubble.color;
+  context.fillText(bubble.code, center, 208);
+  context.letterSpacing = "0px";
+
+  const isHero = bubble.kind === "hero";
+  const isPurpose = bubble.kind === "purpose";
+  context.font = isHero
+    ? '600 72px Georgia, "Times New Roman", serif'
+    : isPurpose
+      ? '600 62px Georgia, "Times New Roman", serif'
+      : '700 58px "Avenir Next", Arial, sans-serif';
+  context.fillStyle = "#f4f7f3";
+  const titleLines = drawCenteredBubbleText(
+    context,
+    bubble.title,
+    center,
+    isHero ? 326 : 330,
+    isHero ? 760 : 720,
+    isHero ? 82 : 68,
+    3,
+  );
+
+  if (isHero) {
+    const accentY = 326 + Math.max(titleLines, 1) * 82;
+    const titleAccent = context.createLinearGradient(260, 0, 770, 0);
+    titleAccent.addColorStop(0, "#25a9eb");
+    titleAccent.addColorStop(1, "#46df86");
+    context.fillStyle = titleAccent;
+    context.font = '600 72px Georgia, "Times New Roman", serif';
+    context.fillText("Digital Growth.", center, accentY);
+  }
+
+  const descriptionY = isHero
+    ? 326 + Math.max(titleLines + 1, 2) * 82 + 35
+    : 330 + titleLines * 68 + 45;
+  context.font = isHero
+    ? '500 31px "Avenir Next", Arial, sans-serif'
+    : '500 30px "Avenir Next", Arial, sans-serif';
+  context.fillStyle = "rgba(239, 246, 242, 0.72)";
+  drawCenteredBubbleText(
+    context,
+    bubble.description,
+    center,
+    descriptionY,
+    isHero ? 730 : 700,
+    42,
+    isHero ? 4 : 5,
+  );
+
+  roundedCanvasPath(context, 218, 805, 588, 78, 39);
+  context.fillStyle = `${bubble.color}18`;
+  context.fill();
+  context.strokeStyle = `${bubble.color}55`;
+  context.lineWidth = 2;
+  context.stroke();
+  context.font = '700 23px "SFMono-Regular", monospace';
+  context.fillStyle = "rgba(244, 248, 245, 0.8)";
+  context.fillText(bubble.footer.toUpperCase(), center, 855);
+
+  context.font = '600 19px "SFMono-Regular", monospace';
+  context.fillStyle = "rgba(244, 248, 245, 0.38)";
+  context.fillText("POINT 01 · COMPANY OVERVIEW", center, 922);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  return texture;
+}
+
 function SceneCompanyOverview({
   visible,
   compactViewport,
@@ -1345,35 +1581,46 @@ function SceneCompanyOverview({
 }) {
   const groupRef = useRef<THREE.Group>(null);
   const lightRef = useRef<THREE.PointLight>(null);
+  const bubbleRefs = useRef<Array<THREE.Group | null>>([]);
   const revealRef = useRef(0);
-  const texture = useMemo(
-    () => createCompanyOverviewTexture(compactViewport),
-    [compactViewport],
+  const textures = useMemo(
+    () => COMPANY_BUBBLES.map(createCompanyBubbleTexture),
+    [],
   );
-  const panelWidth = compactViewport ? 2.22 : 3.2;
-  const panelHeight = compactViewport ? 3.3 : 2;
-  const panelCenterY = compactViewport ? 2.15 : 1.68;
-  const baseY = -panelHeight / 2 - 0.11;
-  const panelQuaternion = useMemo(() => {
-    const panelPosition = new THREE.Vector3(3.3, panelCenterY, -12.67);
+  const layout = compactViewport
+    ? COMPACT_COMPANY_BUBBLE_LAYOUT
+    : DESKTOP_COMPANY_BUBBLE_LAYOUT;
+  const visibleBubbles = compactViewport
+    ? COMPANY_BUBBLES.slice(0, 5)
+    : COMPANY_BUBBLES;
+  const clusterCenterY = compactViewport ? 2.7 : 2.28;
+  const clusterQuaternion = useMemo(() => {
+    const clusterPosition = new THREE.Vector3(
+      3.3,
+      clusterCenterY,
+      -12.67,
+    );
     const cameraPosition = getTourViewPosition(
       TOUR_STOPS[0],
       new THREE.Vector3(),
       compactViewport ? COMPACT_COMPANY_VIEWING_DISTANCE : VIEWING_DISTANCE,
     );
     const orientation = new THREE.Object3D();
-    orientation.position.copy(panelPosition);
+    orientation.position.copy(clusterPosition);
     orientation.lookAt(cameraPosition);
     return orientation.quaternion.clone();
-  }, [compactViewport, panelCenterY]);
+  }, [clusterCenterY, compactViewport]);
 
-  useEffect(() => () => texture.dispose(), [texture]);
+  useEffect(
+    () => () => textures.forEach((texture) => texture.dispose()),
+    [textures],
+  );
 
-  useFrame((_, delta) => {
+  useFrame((state, delta) => {
     revealRef.current = THREE.MathUtils.damp(
       revealRef.current,
       visible ? 1 : 0,
-      visible ? 5.5 : 8,
+      visible ? 4.8 : 8,
       delta,
     );
     const reveal = revealRef.current;
@@ -1381,71 +1628,142 @@ function SceneCompanyOverview({
     if (groupRef.current) {
       groupRef.current.visible = reveal > 0.005 || visible;
       groupRef.current.scale.setScalar(
-        THREE.MathUtils.lerp(0.72, 1, reveal),
+        THREE.MathUtils.lerp(0.2, 1, reveal),
       );
     }
+
+    bubbleRefs.current.forEach((bubble, index) => {
+      if (!bubble) return;
+      const authoredLayout = layout[index];
+      if (!authoredLayout) return;
+      const authoredPosition = authoredLayout.position;
+      bubble.position.set(
+        authoredPosition[0],
+        authoredPosition[1] +
+          Math.sin(state.clock.elapsedTime * 0.72 + index * 0.9) *
+            0.035 *
+            reveal,
+        authoredPosition[2],
+      );
+      const bubbleReveal = THREE.MathUtils.clamp(
+        reveal * 1.45 - index * 0.075,
+        0,
+        1,
+      );
+      bubble.scale.setScalar(
+        THREE.MathUtils.lerp(0.45, 1, bubbleReveal),
+      );
+    });
+
     if (lightRef.current) {
-      lightRef.current.intensity = reveal * 1.15;
+      lightRef.current.intensity = reveal * 1.35;
     }
   });
 
   return (
     <group
       ref={groupRef}
-      position={[3.3, panelCenterY, -12.67]}
-      quaternion={panelQuaternion}
+      position={[3.3, clusterCenterY, -12.67]}
+      quaternion={clusterQuaternion}
       visible={false}
     >
       <pointLight
         ref={lightRef}
-        position={[0, 0, 0.7]}
+        position={[0, 0, 1.1]}
         color="#35c86c"
         intensity={0}
-        distance={4}
+        distance={5.5}
         decay={2}
       />
 
-      <mesh position={[0, 0, -0.035]}>
-        <boxGeometry args={[panelWidth + 0.12, panelHeight + 0.08, 0.07]} />
-        <meshStandardMaterial
-          color="#061015"
-          metalness={0.78}
-          roughness={0.24}
-          emissive="#0b4637"
-          emissiveIntensity={0.3}
-        />
-      </mesh>
+      {layout.slice(1).map((bubbleLayout, connectorIndex) => {
+        const heroPosition = layout[0].position;
+        const dx = bubbleLayout.position[0] - heroPosition[0];
+        const dy = bubbleLayout.position[1] - heroPosition[1];
+        const connectorLength = Math.hypot(dx, dy);
+        return (
+          <mesh
+            key={`connector-${COMPANY_BUBBLES[connectorIndex + 1].key}`}
+            position={[
+              heroPosition[0] + dx / 2,
+              heroPosition[1] + dy / 2,
+              -0.08,
+            ]}
+            rotation={[0, 0, Math.atan2(dy, dx)]}
+          >
+            <boxGeometry args={[connectorLength, 0.018, 0.018]} />
+            <meshBasicMaterial
+              color={COMPANY_BUBBLES[connectorIndex + 1].color}
+              transparent
+              opacity={0.28}
+              toneMapped={false}
+            />
+          </mesh>
+        );
+      })}
 
-      <mesh position={[0, 0, 0.012]}>
-        <planeGeometry args={[panelWidth, panelHeight]} />
-        <meshBasicMaterial
-          map={texture}
-          transparent
-          toneMapped={false}
-          side={THREE.DoubleSide}
-        />
-      </mesh>
+      {visibleBubbles.map((bubble, index) => {
+        const bubbleLayout = layout[index];
+        const radius = bubbleLayout.radius;
+        return (
+          <group
+            key={bubble.key}
+            ref={(node) => {
+              bubbleRefs.current[index] = node;
+            }}
+            position={bubbleLayout.position}
+          >
+            <mesh position={[0, 0, -0.03]}>
+              <circleGeometry args={[radius * 1.09, 64]} />
+              <meshBasicMaterial
+                color={bubble.color}
+                transparent
+                opacity={0.075}
+                blending={THREE.AdditiveBlending}
+                depthWrite={false}
+                toneMapped={false}
+              />
+            </mesh>
 
-      <mesh position={[0, baseY, -0.04]}>
-        <boxGeometry args={[1.14, 0.08, 0.18]} />
-        <meshStandardMaterial
-          color="#071318"
-          metalness={0.82}
-          roughness={0.2}
-          emissive="#149ee7"
-          emissiveIntensity={0.55}
-        />
-      </mesh>
-      <mesh position={[0, baseY + 0.11, -0.055]}>
-        <boxGeometry args={[0.05, 0.23, 0.07]} />
-        <meshStandardMaterial
-          color="#0b2028"
-          metalness={0.8}
-          roughness={0.22}
-          emissive="#35c86c"
-          emissiveIntensity={0.45}
-        />
-      </mesh>
+            <mesh scale={[1, 1, 0.14]}>
+              <sphereGeometry args={[radius, 48, 32]} />
+              <meshPhysicalMaterial
+                color="#09242b"
+                emissive={bubble.color}
+                emissiveIntensity={0.16}
+                metalness={0.2}
+                roughness={0.12}
+                transmission={0.18}
+                transparent
+                opacity={0.24}
+                depthWrite={false}
+              />
+            </mesh>
+
+            <mesh position={[0, 0, radius * 0.155]}>
+              <circleGeometry args={[radius * 0.94, 64]} />
+              <meshBasicMaterial
+                map={textures[index]}
+                transparent
+                toneMapped={false}
+                side={THREE.DoubleSide}
+              />
+            </mesh>
+
+            <mesh position={[0, 0, radius * 0.18]}>
+              <torusGeometry
+                args={[radius * 0.945, radius * 0.018, 12, 64]}
+              />
+              <meshBasicMaterial
+                color={bubble.color}
+                transparent
+                opacity={0.82}
+                toneMapped={false}
+              />
+            </mesh>
+          </group>
+        );
+      })}
     </group>
   );
 }
@@ -1925,7 +2243,7 @@ export default function OfficeTour() {
             >
               Previous view
             </button>
-            <span>Point 01 · Company screen</span>
+            <span>Point 01 · Company bubbles</span>
             <a
               href="https://prodyum.in/it/about"
               target="_blank"
