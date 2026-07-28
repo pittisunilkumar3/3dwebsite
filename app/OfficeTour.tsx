@@ -80,6 +80,10 @@ type ServiceItem = {
 
 const VIEWING_DISTANCE = 4;
 const COMPACT_COMPANY_VIEWING_DISTANCE = 4.1;
+// Point-one bubbles are presentation content, not physical office objects.
+// Keep them above the GLB depth buffer so walls and furniture never obscure
+// their copy while preserving their authored 3D positions and motion.
+const COMPANY_BUBBLE_OVERLAY_ORDER = 80;
 
 function getTourViewPosition(
   stop: TourStop,
@@ -1498,7 +1502,7 @@ function createCompanyBubbleTexture(
   context.stroke();
 
   context.textAlign = "center";
-  context.font = '700 27px "SFMono-Regular", monospace';
+  context.font = '700 31px "SFMono-Regular", monospace';
   context.letterSpacing = "4px";
   context.fillStyle = bubble.color;
   context.fillText(bubble.code, center, 208);
@@ -1510,7 +1514,10 @@ function createCompanyBubbleTexture(
     ? '600 72px Georgia, "Times New Roman", serif'
     : isPurpose
       ? '600 62px Georgia, "Times New Roman", serif'
-      : '700 58px "Avenir Next", Arial, sans-serif';
+      : '700 62px "Avenir Next", Arial, sans-serif';
+  context.shadowColor = "rgba(0, 0, 0, 0.9)";
+  context.shadowBlur = 14;
+  context.shadowOffsetY = 3;
   context.fillStyle = "#f4f7f3";
   const titleLines = drawCenteredBubbleText(
     context,
@@ -1532,35 +1539,40 @@ function createCompanyBubbleTexture(
     context.fillText("Digital Growth.", center, accentY);
   }
 
+  context.shadowBlur = 10;
+  context.shadowOffsetY = 2;
   const descriptionY = isHero
     ? 326 + Math.max(titleLines + 1, 2) * 82 + 35
     : 330 + titleLines * 68 + 45;
   context.font = isHero
-    ? '500 31px "Avenir Next", Arial, sans-serif'
-    : '500 30px "Avenir Next", Arial, sans-serif';
-  context.fillStyle = "rgba(239, 246, 242, 0.72)";
+    ? '600 34px "Avenir Next", Arial, sans-serif'
+    : '600 36px "Avenir Next", Arial, sans-serif';
+  context.fillStyle = "rgba(244, 249, 246, 0.88)";
   drawCenteredBubbleText(
     context,
     bubble.description,
     center,
     descriptionY,
     isHero ? 730 : 700,
-    42,
+    isHero ? 45 : 48,
     isHero ? 4 : 5,
   );
 
+  context.shadowColor = "transparent";
+  context.shadowBlur = 0;
+  context.shadowOffsetY = 0;
   roundedCanvasPath(context, 218, 805, 588, 78, 39);
-  context.fillStyle = `${bubble.color}18`;
+  context.fillStyle = `${bubble.color}24`;
   context.fill();
-  context.strokeStyle = `${bubble.color}55`;
+  context.strokeStyle = `${bubble.color}78`;
   context.lineWidth = 2;
   context.stroke();
-  context.font = '700 23px "SFMono-Regular", monospace';
-  context.fillStyle = "rgba(244, 248, 245, 0.8)";
+  context.font = '700 28px "SFMono-Regular", monospace';
+  context.fillStyle = "rgba(248, 252, 249, 0.92)";
   context.fillText(bubble.footer.toUpperCase(), center, 855);
 
-  context.font = '600 19px "SFMono-Regular", monospace';
-  context.fillStyle = "rgba(244, 248, 245, 0.38)";
+  context.font = '650 21px "SFMono-Regular", monospace';
+  context.fillStyle = "rgba(244, 248, 245, 0.58)";
   context.fillText("POINT 01 · COMPANY OVERVIEW", center, 922);
 
   const texture = new THREE.CanvasTexture(canvas);
@@ -1684,6 +1696,7 @@ function SceneCompanyOverview({
         return (
           <mesh
             key={`connector-${COMPANY_BUBBLES[connectorIndex + 1].key}`}
+            renderOrder={COMPANY_BUBBLE_OVERLAY_ORDER}
             position={[
               heroPosition[0] + dx / 2,
               heroPosition[1] + dy / 2,
@@ -1697,6 +1710,8 @@ function SceneCompanyOverview({
               transparent
               opacity={0.28}
               toneMapped={false}
+              depthTest={false}
+              depthWrite={false}
             />
           </mesh>
         );
@@ -1713,52 +1728,71 @@ function SceneCompanyOverview({
             }}
             position={bubbleLayout.position}
           >
-            <mesh position={[0, 0, -0.03]}>
+            <mesh
+              position={[0, 0, -0.045]}
+              renderOrder={COMPANY_BUBBLE_OVERLAY_ORDER + 1}
+            >
               <circleGeometry args={[radius * 1.09, 64]} />
               <meshBasicMaterial
                 color={bubble.color}
                 transparent
-                opacity={0.075}
+                opacity={0.13}
                 blending={THREE.AdditiveBlending}
+                depthTest={false}
                 depthWrite={false}
                 toneMapped={false}
               />
             </mesh>
 
-            <mesh scale={[1, 1, 0.14]}>
+            <mesh
+              scale={[1, 1, 0.14]}
+              renderOrder={COMPANY_BUBBLE_OVERLAY_ORDER + 2}
+            >
               <sphereGeometry args={[radius, 48, 32]} />
               <meshPhysicalMaterial
-                color="#09242b"
+                color="#06191f"
                 emissive={bubble.color}
-                emissiveIntensity={0.16}
+                emissiveIntensity={0.2}
                 metalness={0.2}
-                roughness={0.12}
-                transmission={0.18}
+                roughness={0.18}
+                transmission={0}
                 transparent
-                opacity={0.24}
+                opacity={0.92}
+                depthTest={false}
                 depthWrite={false}
               />
             </mesh>
 
-            <mesh position={[0, 0, radius * 0.155]}>
+            <mesh
+              position={[0, 0, radius * 0.155]}
+              renderOrder={COMPANY_BUBBLE_OVERLAY_ORDER + 3}
+            >
               <circleGeometry args={[radius * 0.94, 64]} />
               <meshBasicMaterial
                 map={textures[index]}
                 transparent
+                alphaTest={0.02}
                 toneMapped={false}
                 side={THREE.DoubleSide}
+                depthTest={false}
+                depthWrite={false}
               />
             </mesh>
 
-            <mesh position={[0, 0, radius * 0.18]}>
+            <mesh
+              position={[0, 0, radius * 0.18]}
+              renderOrder={COMPANY_BUBBLE_OVERLAY_ORDER + 4}
+            >
               <torusGeometry
                 args={[radius * 0.945, radius * 0.018, 12, 64]}
               />
               <meshBasicMaterial
                 color={bubble.color}
                 transparent
-                opacity={0.82}
+                opacity={0.96}
                 toneMapped={false}
+                depthTest={false}
+                depthWrite={false}
               />
             </mesh>
           </group>

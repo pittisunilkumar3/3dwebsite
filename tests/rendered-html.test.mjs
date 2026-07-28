@@ -107,6 +107,13 @@ test("keeps the authored camera and model rules in place", async () => {
   assert.match(tour, /<circleGeometry args=\{\[radius \* 0\.94, 64\]\}/);
   assert.match(tour, /<torusGeometry/);
   assert.match(tour, /bubbleRefs\.current\.forEach/);
+  assert.match(tour, /const COMPANY_BUBBLE_OVERLAY_ORDER = 80/);
+  assert.match(tour, /renderOrder=\{COMPANY_BUBBLE_OVERLAY_ORDER \+ 3\}/);
+  assert.match(tour, /alphaTest=\{0\.02\}/);
+  assert.ok(
+    [...tour.matchAll(/depthTest=\{false\}/g)].length >= 5,
+    "company bubbles should render above the office depth buffer",
+  );
   assert.match(tour, /COMPACT_COMPANY_VIEWING_DISTANCE = 4\.1/);
   assert.match(tour, /return 70/);
   assert.match(tour, /compactViewport && frame\.kind === "stop" && frame\.stopIndex === 0/);
